@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Altadena Wildfire Relief Initiative | Spacewavy</title>
+    
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#afdd4a', // Spacewavy Brand Color
+                        dark: '#111111',
+                        gray: {
+                            50: '#F9F9F9',
+                            100: '#F5F5F0', // Alternating BG
+                            600: '#666666',
+                            900: '#333333'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Pretendard', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Smooth Scrolling */
+        html { scroll-behavior: smooth; }
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #afdd4a; }
+    </style>
+</head>
+<body class="bg-white text-gray-900 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // Fade In Animation Component
+        const FadeInSection = ({ children, delay = "0" }) => {
+            const [isVisible, setVisible] = useState(false);
+            const domRef = useRef();
+
+            useEffect(() => {
+                const observer = new IntersectionObserver(entries => {
+                    entries.forEach(entry => setVisible(entry.isIntersecting));
+                }, { threshold: 0.1 });
+                
+                const currentRef = domRef.current;
+                if (currentRef) observer.observe(currentRef);
+                
+                return () => {
+                    if (currentRef) observer.unobserve(currentRef);
+                };
+            }, []);
+
+            return (
+                <div
+                    ref={domRef}
+                    className={`transition-all duration-1000 ease-out transform ${
+                        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                    }`}
+                    style={{ transitionDelay: `${delay}ms` }}
+                >
+                    {children}
+                </div>
+            );
+        };
+
+        // Header Component
+        const Header = () => {
+            const [isScrolled, setIsScrolled] = useState(false);
+
+            useEffect(() => {
+                const handleScroll = () => setIsScrolled(window.scrollY > 50);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            return (
+                <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}>
+                    <div className="container mx-auto px-6 flex justify-between items-center">
+                        <a href="#" className="text-2xl font-bold tracking-tight text-dark flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-primary"></span>
+                            Spacewavy
+                        </a>
+                        <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600">
+                            <a href="#overview" className="hover:text-primary transition-colors">Project Overview</a>
+                            <a href="#partnership" className="hover:text-primary transition-colors">Partnership</a>
+                            <a href="#products" className="hover:text-primary transition-colors">Models</a>
+                            <a href="#impact" className="hover:text-primary transition-colors">Impact</a>
+                        </nav>
+                        <a href="#contact" className="px-5 py-2.5 bg-black text-white text-sm font-semibold rounded-full hover:bg-gray-800 transition-all">
+                            Partner With Us
+                        </a>
+                    </div>
+                </header>
+            );
+        };
+
+        // Hero Section
+        const Hero = () => (
+            <section id="overview" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-white">
+                <div className="absolute inset-0 z-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80')] bg-cover bg-center grayscale"></div>
+                <div className="container mx-auto px-6 z-10 text-center max-w-4xl">
+                    <FadeInSection>
+                        <span className="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-wider uppercase text-primary border border-primary rounded-full bg-primary/5">
+                            Project Proposal
+                        </span>
+                        <h1 className="text-5xl md:text-7xl font-bold leading-tight text-dark mb-8 tracking-tight">
+                            Altadena Wildfire Relief<br/>
+                            <span className="text-gray-400">Modular Housing Initiative</span>
+                        </h1>
+                        <p className="text-xl md:text-2xl text-gray-600 mb-12 leading-relaxed max-w-2xl mx-auto">
+                            Rebuilding lives, not just shelters. <br/>
+                            A collaborative initiative to provide immediate, dignified housing for wildfire victims.
+                        </p>
+                         <div className="flex flex-col sm:flex-row justify-center gap-4">
+                            <a href="#background" className="px-8 py-4 bg-primary text-dark font-bold rounded-full hover:brightness-105 transition-all shadow-lg shadow-primary/30">
+                                View Proposal
+                            </a>
+                            <a href="#products" className="px-8 py-4 bg-gray-100 text-dark font-semibold rounded-full hover:bg-gray-200 transition-all">
+                                Explore Products
+                            </a>
+                        </div>
+                    </FadeInSection>
+                </div>
+                
+                <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce text-gray-400">
+                    <i data-lucide="chevron-down"></i>
+                </div>
+            </section>
+        );
+
+        // Background & Intent
+        const Background = () => (
+            <section id="background" className="py-24 bg-gray-100">
+                <div className="container mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+                    <FadeInSection>
+                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Background</h2>
+                        <h3 className="text-4xl font-bold text-dark mb-6">Why We Must Act Now</h3>
+                        <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                            The Altadena wildfires have left a void in the community. Families have lost not just houses, but the sanctity of their daily lives.
+                        </p>
+                        <ul className="space-y-4">
+                            <li className="flex items-start gap-3">
+                                <div className="mt-1 min-w-[20px]"><i data-lucide="check-circle" className="text-primary w-5 h-5 stroke-[3]"></i></div>
+                                <span className="text-gray-700"><strong>Immediate Need:</strong> Urgent demand for deployable housing before public infrastructure is restored.</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="mt-1 min-w-[20px]"><i data-lucide="check-circle" className="text-primary w-5 h-5 stroke-[3]"></i></div>
+                                <span className="text-gray-700"><strong>Dignity First:</strong> Moving beyond "temporary shelter" to "livable spaces" that aid psychological recovery.</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="mt-1 min-w-[20px]"><i data-lucide="check-circle" className="text-primary w-5 h-5 stroke-[3]"></i></div>
+                                <span className="text-gray-700"><strong>Global Benchmark:</strong> Establishing a reference for rapid, high-quality disaster response via ESG partnership.</span>
+                            </li>
+                        </ul>
+                    </FadeInSection>
+                    <FadeInSection delay="200">
+                        <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+                            <div className="aspect-w-16 aspect-h-9 mb-6 bg-gray-200 rounded-xl overflow-hidden relative">
+                                <img 
+                                   src="https://drive.google.com/thumbnail?id=1Nguh-hUnJoRQMT8-G6RGFiK50vcykc6V&sz=w1000" 
+                                   alt="Wildfire context" 
+                                   className="object-cover w-full h-64" 
+                                 />
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                    <span className="text-white font-medium bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">Altadena, California</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-center">
+                                <div>
+                                    <div className="text-3xl font-bold text-dark">Urgent</div>
+                                    <div className="text-xs text-gray-500 mt-1">Timeline</div>
+                                </div>
+                                <div className="border-x border-gray-200">
+                                    <div className="text-3xl font-bold text-primary">Live</div>
+                                    <div className="text-xs text-gray-500 mt-1">Ready to Deploy</div>
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-bold text-dark">ESG</div>
+                                    <div className="text-xs text-gray-500 mt-1">Impact</div>
+                                </div>
+                            </div>
+                        </div>
+                    </FadeInSection>
+                </div>
+            </section>
+        );
+
+        // Partnership Structure
+        const Partnership = () => (
+            <section id="partnership" className="py-24 bg-white">
+                <div className="container mx-auto px-6">
+                    <FadeInSection>
+                        <div className="text-center mb-16">
+                            <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-3">Collaboration</h2>
+                            <h3 className="text-4xl font-bold text-dark">Joint Relief & Sponsorship Model</h3>
+                            <p className="text-gray-500 mt-4 max-w-xl mx-auto">
+                                A coordinated effort leveraging the strengths of each partner for maximum efficiency and impact.
+                            </p>
+                        </div>
+                    </FadeInSection>
+
+                    <div className="grid md:grid-cols-4 gap-6">
+                        {[
+                            { role: "Lead / Coord", name: "Prime Properties", icon: "briefcase", desc: "Project initiation & overall coordination." },
+                            { role: "Execution", name: "Rainmaker", icon: "hammer", desc: "On-site operations & field management." },
+                            { role: "Product / Tech", name: "Spacewavy", icon: "box", desc: "Modular unit provision & technical support.", active: true },
+                            { role: "Sponsorship", name: "Partners", icon: "heart-handshake", desc: "Sports stars & Corporate ESG funding." }
+                        ].map((partner, idx) => (
+                            <FadeInSection key={idx} delay={idx * 100}>
+                                <div className={`h-full p-8 rounded-2xl border ${partner.active ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'} hover:shadow-lg transition-all text-center group`}>
+                                    <div className={`w-14 h-14 mx-auto mb-6 rounded-full flex items-center justify-center ${partner.active ? 'bg-primary text-white' : 'bg-white text-gray-400 border border-gray-100 group-hover:bg-dark group-hover:text-white transition-colors'}`}>
+                                        <i data-lucide={partner.icon}></i>
+                                    </div>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{partner.role}</h4>
+                                    <h3 className="text-xl font-bold text-dark mb-3">{partner.name}</h3>
+                                    <p className="text-sm text-gray-600 leading-relaxed">{partner.desc}</p>
+                                </div>
+                            </FadeInSection>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+
+        // Product Showcase
+        const Products = () => {
+            const [activeTab, setActiveTab] = useState('be');
+            const [currentSlide, setCurrentSlide] = useState(0);
+
+            // *** 특정 이미지 ID 지정 ***
+            const targetImageId = '1vFNrvggz8h6y8ut1QBJ3xYW4ElBOfmXv';
+
+            const productData = {
+                be: {
+                    title: "Comfortable Temporary Shelter",
+                    subtitle: "For Mid-to-Long Term Stay",
+                    description: "More than just a roof. The BE Model provides a psychologically stable environment with proper insulation, lighting, and privacy, aiding the return to normalcy.",
+                    features: [
+                        { icon: "shield", title: "Safe & Private", description: "High-performance insulation and secure structure." },
+                        { icon: "zap", title: "Instant Deployment", description: "Pre-fabricated for rapid on-site installation." }
+                    ],
+                    images: [
+                        "https://drive.google.com/thumbnail?id=1oV6LwsscflZTsn4Q6Tc4HPMazhHN5VUF&sz=w1000",
+                        "https://drive.google.com/thumbnail?id=1bIUgz9_VwwGldQMOfh7SHKgctUB8SCbP&sz=w1000",
+                        "https://drive.google.com/thumbnail?id=1jz6_2kquMTq761mQwonkOEgUI2PleoZY&sz=w1000",
+                        // *** 타겟 이미지 링크 ***
+                        "https://drive.google.com/thumbnail?id=1vFNrvggz8h6y8ut1QBJ3xYW4ElBOfmXv&sz=w1000",
+                        "https://drive.google.com/thumbnail?id=1XTtzcWJK-WyaDQGTRlx03K6ktEeAIsWR&sz=w1000"
+                    ]
+                },
+                cabin: {
+                    title: "Mobile & Flexible Unit",
+                    subtitle: "For Dynamic Field Conditions",
+                    description: "Designed for versatility. The Cabin Model can be easily relocated and repurposed as a community hub, medical support center, or temporary housing.",
+                    features: [
+                        { icon: "move", title: "High Mobility", description: "Adaptable to changing site conditions and needs." },
+                        { icon: "users", title: "Multi-purpose", description: "Expandable for community or support facilities." }
+                    ],
+                    images: [
+                        "https://drive.google.com/thumbnail?id=1Ve5jHqj5jiNP6sZWNwjvyKV3Zh-pEE7-&sz=w1000",
+                        "https://drive.google.com/thumbnail?id=1bm1RPjTkE8rD9PXNFoZfzNrEQAWIKfeZ&sz=w1000",
+                        "https://drive.google.com/thumbnail?id=1HuDLJSycq7EN97ex7IODV4AHcSM-mB5m&sz=w1000",
+                        "https://drive.google.com/thumbnail?id=1auR5QbL7zz8ZdnDpJmO_0gOzGxOuAw-e&sz=w1000",
+                        "https://drive.google.com/thumbnail?id=1LwFt3eHSEqRhdjVMgEBYLYXj1in7yxsh&sz=w1000"
+                    ]
+                }
+            };
+
+            const handleNext = () => {
+                setCurrentSlide((prev) => (prev + 1) % productData[activeTab].images.length);
+            };
+
+            const handlePrev = () => {
+                setCurrentSlide((prev) => (prev - 1 + productData[activeTab].images.length) % productData[activeTab].images.length);
+            };
+            
+            const activeProduct = productData[activeTab];
+
+            return (
+                <section id="products" className="py-24 bg-gray-900 text-white relative overflow-hidden">
+                    <div className="container mx-auto px-6 relative z-10">
+                        <FadeInSection>
+                            <div className="text-center mb-12">
+                                <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-3">Our Solution</h2>
+                                <h3 className="text-4xl font-bold mb-6">Spacewavy Modular Units</h3>
+                                <div className="flex justify-center gap-4">
+                                    <button 
+                                        onClick={() => { setActiveTab('be'); setCurrentSlide(0); }}
+                                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'be' ? 'bg-white text-dark' : 'bg-transparent text-gray-400 border border-gray-600 hover:border-white'}`}
+                                    >
+                                        BE Model
+                                    </button>
+                                    <button 
+                                        onClick={() => { setActiveTab('cabin'); setCurrentSlide(0); }}
+                                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'cabin' ? 'bg-white text-dark' : 'bg-transparent text-gray-400 border border-gray-600 hover:border-white'}`}
+                                    >
+                                        Cabin Model
+                                    </button>
+                                </div>
+                            </div>
+                        </FadeInSection>
+
+                        <div className="max-w-6xl mx-auto">
+                            <FadeInSection>
+                                <div className="grid md:grid-cols-2 gap-12 items-center">
+                                    <div className={`relative bg-gray-800 rounded-3xl overflow-hidden aspect-video border border-gray-700 shadow-2xl ${activeTab === 'cabin' ? 'md:order-2' : ''}`}>
+                                        {activeProduct.images.map((image, index) => {
+                                            const isTargetImage = image.includes(targetImageId);
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    // *** 수정된 부분: 배경색을 bg-gray-800(카드색)으로 지정하여 공백을 자연스럽게 처리 ***
+                                                    className={`absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out bg-gray-800 flex items-center justify-center ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
+                                                >
+                                                    <img 
+                                                        src={image} 
+                                                        alt={`${activeProduct.title} image ${index + 1}`} 
+                                                        className={`w-full h-full ${isTargetImage ? 'object-contain' : 'object-cover'}`} 
+                                                    />
+                                                    {/* *** 수정된 부분: 모든 이미지에 그라데이션 적용 *** */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent pointer-events-none"></div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Slider Controls */}
+                                        <div className="absolute bottom-6 right-6 z-20 flex gap-2">
+                                            <button onClick={handlePrev} className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all">
+                                                <i data-lucide="arrow-left" className="w-5 h-5"></i>
+                                            </button>
+                                            <button onClick={handleNext} className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all">
+                                                <i data-lucide="arrow-right" className="w-5 h-5"></i>
+                                            </button>
+                                        </div>
+                                         <span className="absolute top-6 left-6 z-10 text-xl font-bold tracking-widest uppercase">{activeTab} MODEL</span>
+                                    </div>
+                                    <div className={`${activeTab === 'cabin' ? 'md:order-1' : ''}`}>
+                                        <h4 className="text-3xl font-bold mb-2">{activeProduct.title}</h4>
+                                        <p className="text-primary font-medium mb-6">{activeProduct.subtitle}</p>
+                                        <p className="text-gray-300 mb-8 leading-relaxed">
+                                            {activeProduct.description}
+                                        </p>
+                                        <div className="space-y-4">
+                                            {activeProduct.features.map((feature, idx) => (
+                                                 <div key={idx} className="flex gap-4">
+                                                     <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-primary flex-shrink-0"><i data-lucide={feature.icon}></i></div>
+                                                     <div>
+                                                         <h5 className="font-bold">{feature.title}</h5>
+                                                         <p className="text-sm text-gray-400">{feature.description}</p>
+                                                     </div>
+                                                 </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </FadeInSection>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        // Business Model & Impact
+        const Impact = () => (
+            <section id="impact" className="py-24 bg-gray-100">
+                <div className="container mx-auto px-6">
+                    <div className="grid md:grid-cols-2 gap-12">
+                        {/* Donation Model */}
+                        <FadeInSection>
+                            <div className="bg-white p-10 rounded-3xl shadow-sm h-full">
+                                <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                    <i data-lucide="gift" className="text-primary"></i>
+                                    Donation Framework
+                                </h3>
+                                <div className="space-y-6">
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">Spacewavy's Pledge</span>
+                                        <div className="text-lg font-bold text-dark mt-1">1 BE Model + 1 Cabin Model</div>
+                                        <div className="text-sm text-gray-600 mt-1">Initial Donation</div>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">Expansion</span>
+                                        <div className="text-lg font-bold text-dark mt-1">Joint Sponsorship Fund</div>
+                                        <div className="text-sm text-gray-600 mt-1">Additional units supplied via fundraising</div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 pt-2">
+                                        <i data-lucide="info" size={16}></i> Spacewavy operates at Near Zero Margin
+                                    </div>
+                                </div>
+                            </div>
+                        </FadeInSection>
+
+                        {/* Expected Impact */}
+                        <FadeInSection delay="200">
+                            <div className="bg-white p-10 rounded-3xl shadow-sm h-full">
+                                <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                    <i data-lucide="trending-up" className="text-primary"></i>
+                                    Strategic Impact
+                                </h3>
+                                <ul className="space-y-6">
+                                    <li className="flex gap-4">
+                                        <span className="text-4xl font-light text-gray-200">01</span>
+                                        <div>
+                                            <h4 className="font-bold text-dark">Social Responsibility</h4>
+                                            <p className="text-sm text-gray-600 mt-1">Providing immediate housing stability for victims, demonstrating a private-sector led disaster response model.</p>
+                                        </div>
+                                    </li>
+                                    <li className="flex gap-4">
+                                        <span className="text-4xl font-light text-gray-200">02</span>
+                                        <div>
+                                            <h4 className="font-bold text-dark">Global Branding</h4>
+                                            <p className="text-sm text-gray-600 mt-1">Positive media exposure in the US, establishing a "K-Modular × Disaster Relief" success story.</p>
+                                        </div>
+                                    </li>
+                                    <li className="flex gap-4">
+                                        <span className="text-4xl font-light text-gray-200">03</span>
+                                        <div>
+                                            <h4 className="font-bold text-dark">ESG Milestone</h4>
+                                            <p className="text-sm text-gray-600 mt-1">Building a solid reference for future sustainable and humanitarian housing projects.</p>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </FadeInSection>
+                    </div>
+                </div>
+            </section>
+        );
+
+        // Risks & Logistics (Accordion style)
+        const Risks = () => {
+             const [openIndex, setOpenIndex] = useState(0);
+             const items = [
+                 {
+                     title: "Certification & Permits",
+                     risk: "Residential codes and temporary housing regulations in California are strict.",
+                     solution: "Requires Prime/Rainmaker to secure temporary permits or exceptions based on the disaster relief nature of the project. Spacewavy's participation is conditional on this resolution."
+                 },
+                 {
+                     title: "Logistics & Transportation",
+                     risk: "Shipping from Korea to the US involves high costs and potential delays.",
+                     solution: "Transportation costs should be covered by the joint sponsorship package. Exploring In-Kind Sponsorship opportunities from logistics partners."
+                 }
+             ];
+
+             return (
+                 <section className="py-24 bg-white border-t border-gray-100">
+                     <div className="container mx-auto px-6 max-w-4xl">
+                        <FadeInSection>
+                             <h2 className="text-3xl font-bold text-center mb-12">Key Considerations</h2>
+                             <div className="space-y-4">
+                                 {items.map((item, idx) => (
+                                     <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden transition-all hover:border-gray-300">
+                                         <button 
+                                             onClick={() => setOpenIndex(openIndex === idx ? -1 : idx)}
+                                             className="w-full flex justify-between items-center p-6 text-left focus:outline-none"
+                                         >
+                                             <span className="font-bold text-lg text-dark">{item.title}</span>
+                                             <i data-lucide={openIndex === idx ? "minus" : "plus"} className={`transition-transform duration-300 ${openIndex === idx ? "text-primary rotate-180" : "text-gray-400"}`}></i>
+                                         </button>
+                                         <div className={`transition-all duration-300 overflow-hidden ${openIndex === idx ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                             <div className="p-6 pt-0 bg-gray-50/50">
+                                                 <div className="flex gap-4 mb-4">
+                                                     <span className="text-xs font-bold text-red-500 w-20 pt-1">RISK</span>
+                                                     <p className="text-gray-600 text-sm">{item.risk}</p>
+                                                 </div>
+                                                 <div className="flex gap-4">
+                                                     <span className="text-xs font-bold text-primary w-20 pt-1">SOLUTION</span>
+                                                     <p className="text-gray-800 text-sm font-medium">{item.solution}</p>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 ))}
+                             </div>
+                        </FadeInSection>
+                      </div>
+                 </section>
+             );
+        }
+
+        // Footer / Next Steps
+        const Footer = () => (
+            <footer id="contact" className="py-20 bg-dark text-white text-center">
+                <div className="container mx-auto px-6">
+                    <FadeInSection>
+                        <h2 className="text-3xl font-bold mb-6">Ready to Move Forward?</h2>
+                        <p className="text-gray-400 mb-10 max-w-lg mx-auto">
+                            The next steps involve internal agreement, conditional commitment to Prime/Rainmaker, and finalizing the joint sponsorship structure.
+                        </p>
+                        <div className="flex flex-col md:flex-row justify-center gap-4 mb-16">
+                            <button className="px-8 py-4 bg-primary text-dark font-bold rounded-full hover:bg-[#bce462] transition-colors">
+                                Confirm Participation
+                            </button>
+                            <button className="px-8 py-4 bg-transparent border border-gray-600 text-white font-semibold rounded-full hover:bg-white hover:text-dark transition-colors">
+                                Contact Project Lead
+                            </button>
+                        </div>
+                        <div className="border-t border-gray-800 pt-10 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="text-2xl font-bold flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-primary"></span>
+                                Spacewavy
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                © 2026 Spacewavy. All rights reserved. <br className="md:hidden"/>
+                                Confidential Proposal for Altadena Relief Initiative.
+                            </p>
+                        </div>
+                    </FadeInSection>
+                </div>
+            </footer>
+        );
+
+        // Main App
+        const App = () => {
+            // Re-render icons when DOM updates
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            });
+
+            return (
+                <div className="antialiased">
+                    <Header />
+                    <Hero />
+                    <Background />
+                    <Partnership />
+                    <Products />
+                    <Impact />
+                    <Risks />
+                    <Footer />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
