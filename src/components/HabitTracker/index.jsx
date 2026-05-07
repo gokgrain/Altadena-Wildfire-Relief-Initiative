@@ -1,41 +1,92 @@
-import { Plus, Flame } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Flame, Trash2, Check } from 'lucide-react'
+import { useLocalStorage } from '../../hooks/useLocalStorage'
 
-const SAMPLE_HABITS = [
-  { id: 1, name: '운동', streak: 12, unit: '30분 연속', done: true },
-  { id: 2, name: '독서 30분', streak: 7, unit: '7일 연속', done: true },
-  { id: 3, name: '영상', streak: 3, unit: '3일 연속', done: false },
-  { id: 4, name: '영어 공부', streak: 0, unit: '0일 연속', done: false },
-]
+// ── helpers ──────────────────────────────────────────────
+function todayKey() {
+  return new Date().toISOString().slice(0, 10) // "YYYY-MM-DD"
+}
 
-// 주간 성취율 샘플 데이터 (7일치 0~1)
-const WEEKLY_RATES = [0.5, 0.75, 1, 0.5, 0.25, 0.75, 0.5]
-const DAYS = ['월', '화', '수', '목', '금', '토', '일']
+function dateKey(date) {
+  return date.toISOString().slice(0, 10)
+}
 
-function MiniLineChart({ data }) {
-  const W = 160
-  const H = 48
-  const pad = 4
-  const w = W - pad * 2
-  const h = H - pad * 2
+function calcStreak(habitId, logs) {
+  let streak = 0
+  const d = new Date()
+  // 오늘 포함해서 과거로 거슬러 올라감
+  for (let i = 0; i < 365; i++) {
+    const key = dateKey(d)
+    if (logs[key] && logs[key].includes(habitId)) {
+      streak++
+      d.setDate(d.getDate() - 1)
+    } else {
+      // 오늘 아직 체크 안 한 경우 → 어제부터 시작
+      if (i === 0) {
+        d.setDate(d.getDate() - 1)
+        continue
+      }
+      break
+    }
+  }
+  return streak
+}
 
-  const points = data.map((v, i) => {
-    const x = pad + (i / (data.length - 1)) * w
-    const y = pad + h - v * h
-    return `${x},${y}`
+// 이번 주 월~일 날짜 배열
+function getThisWeekDates() {
+  const now = new Date()
+  const day = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d
   })
+}
 
-  const polyline = points.join(' ')
-  const area = `${pad},${pad + h} ${polyline} ${pad + w},${pad + h}`
+// 날짜별 성취율 (0~1)
+function weeklyRates(habits, logs) {
+  const dates = getThisWeekDates()
+  return dates.map(d => {
+    const key = dateKey(d)
+    if (!logs[key] || habits.length === 0) return 0
+    return logs[key].filter(id => habits.find(h => h.id === id)).length / habits.length
+  })
+}
+
+// ── MiniLineChart ─────────────────────────────────────────
+function MiniLineChart({ data }) {
+  const W = 148
+  const H = 44
+  const PAD = 4
+  const w = W - PAD * 2
+  const h = H - PAD * 2
+
+  if (data.every(v => v === 0)) {
+    return (
+      <div className="flex items-center justify-center" style={{ height: H }}>
+        <span className="text-[10px] text-white/20">아직 기록 없음</span>
+      </div>
+    )
+  }
+
+  const pts = data.map((v, i) => ({
+    x: PAD + (i / (data.length - 1)) * w,
+    y: PAD + h - v * h,
+  }))
+  const polyline = pts.map(p => `${p.x},${p.y}`).join(' ')
+  const area = `${PAD},${PAD + h} ${polyline} ${PAD + w},${PAD + h}`
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
       <defs>
-        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+        <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
           <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polygon points={area} fill="url(#lineGrad)" />
+      <polygon points={area} fill="url(#hg)" />
       <polyline
         points={polyline}
         fill="none"
@@ -44,109 +95,193 @@ function MiniLineChart({ data }) {
         strokeLinejoin="round"
         strokeLinecap="round"
       />
-      {data.map((v, i) => {
-        const x = pad + (i / (data.length - 1)) * w
-        const y = pad + h - v * h
-        return (
-          <circle key={i} cx={x} cy={y} r="2.5" fill="#10b981" />
-        )
-      })}
+      {pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="#10b981" />
+      ))}
     </svg>
   )
 }
 
+// ── Main Component ────────────────────────────────────────
 export default function HabitTracker() {
+  const [habits, setHabits] = useLocalStorage('habits', [
+    { id: 'h1', name: '운동' },
+    { id: 'h2', name: '독서 30분' },
+    { id: 'h3', name: '영상' },
+    { id: 'h4', name: '영어 공부' },
+  ])
+  const [logs, setLogs] = useLocalStorage('habit-logs', {})
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [hoveredId, setHoveredId] = useState(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (adding) inputRef.current?.focus()
+  }, [adding])
+
+  const today = todayKey()
+  const todayDone = logs[today] || []
+
+  function toggleHabit(id) {
+    setLogs(prev => {
+      const current = prev[today] || []
+      const updated = current.includes(id)
+        ? current.filter(x => x !== id)
+        : [...current, id]
+      return { ...prev, [today]: updated }
+    })
+  }
+
+  function addHabit() {
+    const name = newName.trim()
+    if (!name) { setAdding(false); return }
+    const id = `h${Date.now()}`
+    setHabits(prev => [...prev, { id, name }])
+    setNewName('')
+    setAdding(false)
+  }
+
+  function deleteHabit(id) {
+    setHabits(prev => prev.filter(h => h.id !== id))
+    // 로그에서도 해당 habit 제거
+    setLogs(prev => {
+      const next = { ...prev }
+      Object.keys(next).forEach(date => {
+        next[date] = next[date].filter(x => x !== id)
+      })
+      return next
+    })
+  }
+
+  const rates = weeklyRates(habits, logs)
+  const DAYS = ['월', '화', '수', '목', '금', '토', '일']
+  const todayDayIdx = (() => {
+    const d = new Date().getDay()
+    return d === 0 ? 6 : d - 1
+  })()
+
   return (
-    <div className="panel h-full rounded-lg">
+    <div className="panel h-full rounded-lg flex flex-col">
       {/* Header */}
       <div className="panel-header">
         <span className="panel-title">Habit Tracker</span>
-        <button className="icon-btn">
+        <button
+          className="icon-btn"
+          onClick={() => setAdding(true)}
+          title="습관 추가"
+        >
           <Plus size={13} />
         </button>
       </div>
 
       {/* Habit list */}
-      <div className="panel-body flex flex-col gap-1 overflow-y-auto">
-        {SAMPLE_HABITS.map(habit => (
-          <div
-            key={habit.id}
-            className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-white/5 cursor-pointer"
-          >
-            {/* Checkbox */}
-            <div className={`check-box ${habit.done ? 'checked' : ''}`}>
-              {habit.done && (
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                  <path d="M1.5 4L3 5.5L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </div>
+      <div className="flex-1 overflow-y-auto px-2 py-1.5 flex flex-col gap-0.5">
+        {habits.map(habit => {
+          const done = todayDone.includes(habit.id)
+          const streak = calcStreak(habit.id, logs)
+          const isHovered = hoveredId === habit.id
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className={`text-xs font-medium truncate ${habit.done ? 'text-white/60 line-through' : 'text-white/80'}`}>
-                {habit.name}
-              </div>
-              <div className="text-[10px] text-white/25 mt-0.5">{habit.unit}</div>
-            </div>
+          return (
+            <div
+              key={habit.id}
+              className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100 group"
+              style={{ background: isHovered ? '#ffffff07' : 'transparent' }}
+              onMouseEnter={() => setHoveredId(habit.id)}
+              onMouseLeave={() => setHoveredId(null)}
+            >
+              {/* Checkbox */}
+              <button
+                onClick={() => toggleHabit(habit.id)}
+                className="check-box flex-shrink-0 transition-all duration-150"
+                style={done ? { background: '#10b981', borderColor: '#10b981' } : {}}
+              >
+                {done && <Check size={9} color="white" strokeWidth={3} />}
+              </button>
 
-            {/* Streak */}
-            {habit.streak > 0 && (
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <Flame size={10} className="text-amber-400" />
-                <span className="streak">{habit.streak}</span>
+              {/* Name */}
+              <div className="flex-1 min-w-0">
+                <span
+                  className="text-xs font-medium truncate block transition-colors duration-150"
+                  style={{ color: done ? '#ffffff40' : '#ffffff80', textDecoration: done ? 'line-through' : 'none' }}
+                >
+                  {habit.name}
+                </span>
+                {streak > 0 && (
+                  <span className="text-[10px]" style={{ color: '#ffffff25' }}>
+                    {streak}일 연속
+                  </span>
+                )}
               </div>
-            )}
+
+              {/* Streak or delete */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {isHovered ? (
+                  <button
+                    onClick={() => deleteHabit(habit.id)}
+                    className="icon-btn opacity-60 hover:opacity-100 hover:text-rose-400"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                ) : streak > 0 ? (
+                  <div className="flex items-center gap-0.5">
+                    <Flame size={10} style={{ color: '#f59e0b' }} />
+                    <span className="streak">{streak}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Add input */}
+        {adding && (
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: '#ffffff07' }}>
+            <div className="check-box flex-shrink-0 opacity-30" />
+            <input
+              ref={inputRef}
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') addHabit()
+                if (e.key === 'Escape') { setAdding(false); setNewName('') }
+              }}
+              onBlur={addHabit}
+              placeholder="습관 이름 입력..."
+              className="flex-1 bg-transparent text-xs outline-none"
+              style={{ color: '#ffffff80' }}
+            />
           </div>
-        ))}
+        )}
 
-        {/* Divider */}
-        <hr className="divider my-2" />
-
-        {/* Second group (duplicate for visual) */}
-        {SAMPLE_HABITS.slice(0, 2).map(habit => (
-          <div
-            key={`b-${habit.id}`}
-            className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-white/5 cursor-pointer"
-          >
-            <div className={`check-box ${habit.done ? 'checked' : ''}`}>
-              {habit.done && (
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                  <path d="M1.5 4L3 5.5L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className={`text-xs font-medium truncate ${habit.done ? 'text-white/60 line-through' : 'text-white/80'}`}>
-                {habit.name}
-              </div>
-              <div className="text-[10px] text-white/25 mt-0.5">{habit.unit}</div>
-            </div>
-            {habit.streak > 0 && (
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <Flame size={10} className="text-amber-400" />
-                <span className="streak">{habit.streak}</span>
-              </div>
-            )}
+        {habits.length === 0 && !adding && (
+          <div className="flex flex-col items-center justify-center py-6 gap-2">
+            <span className="text-[11px]" style={{ color: '#ffffff20' }}>
+              습관을 추가해보세요
+            </span>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Weekly chart */}
-      <div className="flex-shrink-0 px-3 pb-3">
-        <div
-          className="rounded-xl p-3"
-          style={{ background: '#0f0f13' }}
-        >
-          <p className="text-[10px] font-semibold text-white/30 mb-2 tracking-widest uppercase">
-            주간 해빗트래커<br />성취율 꺾은선 그래프
-          </p>
-          <MiniLineChart data={WEEKLY_RATES} />
-          <div className="flex justify-between mt-1">
-            {DAYS.map(d => (
-              <span key={d} className="text-[9px] text-white/20">{d}</span>
-            ))}
-          </div>
+      <div
+        className="flex-shrink-0 mx-2 mb-2 rounded-xl p-3"
+        style={{ background: '#0f0f13' }}
+      >
+        <p className="text-[9px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#ffffff25' }}>
+          주간 성취율
+        </p>
+        <MiniLineChart data={rates} />
+        <div className="flex justify-between mt-1 px-0.5">
+          {DAYS.map((d, i) => (
+            <span
+              key={d}
+              className="text-[9px]"
+              style={{ color: i === todayDayIdx ? '#10b981' : '#ffffff20' }}
+            >
+              {d}
+            </span>
+          ))}
         </div>
       </div>
     </div>
