@@ -7,38 +7,41 @@ export default {
   theme: {
     extend: {
       colors: {
-        surface: {
-          950: '#0a0a0f',
-          900: '#0f0f1a',
-          800: '#16162a',
-          700: '#1e1e35',
-          600: '#252540',
+        bg: {
+          base: '#0f0f13',
+          panel: '#16161c',
+          card: '#1c1c24',
+          hover: '#22222c',
+        },
+        border: {
+          subtle: '#ffffff0f',
+          DEFAULT: '#ffffff18',
+          strong: '#ffffff28',
         },
         accent: {
-          purple: '#7c3aed',
-          violet: '#8b5cf6',
-          indigo: '#6366f1',
-          cyan: '#06b6d4',
+          violet: '#7c5cfc',
           emerald: '#10b981',
+          cyan: '#06b6d4',
           amber: '#f59e0b',
+          rose: '#f43f5e',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       animation: {
-        'fade-in': 'fadeIn 0.4s ease-out',
-        'slide-up': 'slideUp 0.4s ease-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in': 'fadeIn 0.3s ease-out',
+        'slide-right': 'slideRight 0.3s ease-out',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(16px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+        slideRight: {
+          '0%': { opacity: '0', transform: 'translateX(-8px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
         },
       },
     },

@@ -3,66 +3,92 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html {
-    @apply bg-[#0a0a0f] text-gray-100;
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+    background: #0f0f13;
+    color: #e2e2e8;
     font-family: 'Inter', system-ui, sans-serif;
-  }
-
-  body {
-    @apply m-0 p-0;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-white/20;
-  }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #ffffff18; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ffffff30; }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl;
+  /* Panel */
+  .panel {
+    @apply flex flex-col overflow-hidden;
+    background: #16161c;
+    border: 1px solid #ffffff10;
   }
 
-  .glass-card-hover {
-    @apply glass-card hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer;
+  .panel-header {
+    @apply flex items-center justify-between px-3 py-2 flex-shrink-0;
+    border-bottom: 1px solid #ffffff0f;
   }
 
-  .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150;
-    @apply text-gray-400 hover:text-white hover:bg-white/8;
+  .panel-title {
+    @apply text-[10px] font-semibold tracking-[0.15em] uppercase;
+    color: #ffffff50;
   }
 
-  .sidebar-link.active {
-    @apply text-white bg-violet-600/20 border border-violet-500/30;
+  .panel-body {
+    @apply flex-1 overflow-y-auto p-3;
   }
 
-  .progress-bar {
-    @apply h-1.5 bg-white/10 rounded-full overflow-hidden;
+  /* Icon button */
+  .icon-btn {
+    @apply w-6 h-6 flex items-center justify-center rounded-md transition-colors duration-150;
+    color: #ffffff30;
+  }
+  .icon-btn:hover { background: #ffffff0f; color: #ffffff80; }
+
+  /* Divider */
+  .divider { border-color: #ffffff0f; }
+
+  /* Tag */
+  .tag {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium;
+    background: #ffffff0a;
+    color: #ffffff50;
+    border: 1px solid #ffffff10;
   }
 
-  .progress-fill {
-    @apply h-full rounded-full transition-all duration-700 ease-out;
+  /* Checkbox */
+  .check-box {
+    @apply w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all duration-150;
+    border: 1px solid #ffffff25;
+  }
+  .check-box.checked {
+    background: #10b981;
+    border-color: #10b981;
   }
 
-  .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium;
+  /* Streak badge */
+  .streak {
+    @apply text-[10px] font-bold tabular-nums;
+    color: #f59e0b;
+  }
+
+  /* Timebox row */
+  .time-row {
+    @apply flex items-start gap-2 relative;
+    min-height: 40px;
+  }
+  .time-label {
+    @apply text-[10px] tabular-nums flex-shrink-0 pt-0.5;
+    width: 36px;
+    color: #ffffff25;
+  }
+  .time-line {
+    @apply absolute left-10 right-0 top-0;
+    height: 1px;
+    background: #ffffff08;
   }
 }

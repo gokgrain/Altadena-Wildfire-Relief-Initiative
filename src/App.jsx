@@ -1,26 +1,45 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Sidebar from './components/Sidebar'
-import Dashboard from './pages/Dashboard'
-import TimePlanner from './pages/TimePlanner'
-import HabitTracker from './pages/HabitTracker'
-import IdeaArchive from './pages/IdeaArchive'
-import Settings from './pages/Settings'
+import HabitTracker from './components/HabitTracker'
+import WeeklyPlanner from './components/WeeklyPlanner'
+import Timebox from './components/Timebox'
+import IdeaCoverflow from './components/IdeaCoverflow'
+import IdeaList from './components/IdeaList'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <div className="flex h-screen overflow-hidden bg-[#0a0a0f]">
-        <Sidebar />
-        <main className="flex-1 overflow-hidden flex flex-col">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/planner" element={<TimePlanner />} />
-            <Route path="/habits" element={<HabitTracker />} />
-            <Route path="/ideas" element={<IdeaArchive />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </main>
+    <div
+      className="flex flex-col h-screen w-screen overflow-hidden"
+      style={{ background: '#0f0f13', gap: 6, padding: 6 }}
+    >
+      {/* ── Top row: 3 panels ── */}
+      <div className="flex gap-1.5 overflow-hidden" style={{ flex: '0 0 55%' }}>
+        {/* Left: Habit Tracker ~22% */}
+        <div style={{ flex: '0 0 21%' }} className="overflow-hidden">
+          <HabitTracker />
+        </div>
+
+        {/* Center: Weekly Planner ~49% */}
+        <div style={{ flex: '1 1 0%' }} className="overflow-hidden">
+          <WeeklyPlanner />
+        </div>
+
+        {/* Right: Timebox ~29% */}
+        <div style={{ flex: '0 0 28%' }} className="overflow-hidden">
+          <Timebox />
+        </div>
       </div>
-    </BrowserRouter>
+
+      {/* ── Bottom row: 2 panels ── */}
+      <div className="flex gap-1.5 overflow-hidden" style={{ flex: '1 1 0%' }}>
+        {/* Left: Idea Coverflow ~45% */}
+        <div style={{ flex: '0 0 44%' }} className="overflow-hidden">
+          <IdeaCoverflow />
+        </div>
+
+        {/* Right: Idea List ~55% */}
+        <div style={{ flex: '1 1 0%' }} className="overflow-hidden">
+          <IdeaList />
+        </div>
+      </div>
+    </div>
   )
 }
