@@ -102,16 +102,18 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
 
     if (!block) return
 
-    // Timebox에서 삭제 시 Brain Dump로 초기화 복귀
-    // 기존 재생성 항목(sourceBlockId === id)이 있으면 교체, 없으면 맨 앞에 추가
     setBrainItems(prev => {
+      // 같은 원본 할일(taskSourceId)이 이미 Brain Dump에 있으면 중복 생성 안 함
+      const alreadyExists = prev.some(bi => bi.taskSourceId === block.sourceId)
       const filtered = prev.filter(bi => bi.sourceBlockId !== id)
+      if (alreadyExists) return filtered
       return [{
         id: `bd${Date.now()}`,
         text: block.text,
         isMust: block.isMust || false,
         persistedStatus: 'none',
         mustSourceId: block.isMust ? block.sourceId : undefined,
+        taskSourceId: block.sourceId,
         createdAt: new Date().toISOString(),
       }, ...filtered]
     })
@@ -131,11 +133,14 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     }
 
     const persistedStatus = newStatus === 'in-progress' ? 'in-progress' : 'none'
-    // mustSourceId: Must Todo 체인 보존 (원본 Brain Dump id → Must Todo.sourceId)
     const mustSourceId = block.isMust ? block.sourceId : undefined
+    const taskSourceId = block.sourceId
 
     setBrainItems(prev => {
-      const existingIdx = prev.findIndex(bi => bi.sourceBlockId === block.id)
+      // sourceBlockId(이 블록 전용) 또는 taskSourceId(같은 원본 할일) 기준으로 기존 항목 탐색
+      const existingIdx = prev.findIndex(bi =>
+        bi.sourceBlockId === block.id || bi.taskSourceId === taskSourceId
+      )
       const recreated = {
         id: existingIdx >= 0 ? prev[existingIdx].id : `bd${Date.now()}`,
         text: block.text,
@@ -143,6 +148,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         persistedStatus,
         sourceBlockId: block.id,
         mustSourceId,
+        taskSourceId,
         createdAt: existingIdx >= 0 ? prev[existingIdx].createdAt : new Date().toISOString(),
       }
       if (existingIdx >= 0) {
