@@ -101,36 +101,36 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
 
   // ── 상태 변경 ────────────────────────────────────────────
   // 블록은 Timebox에 항상 영구보존.
-  // 완료 → Brain Dump + Must Todo에서 제거
-  // 진행중/미완료 → Brain Dump에 재생성(또는 업데이트)
+  // 완료 → Brain Dump 재생성 항목 + Must Todo 제거
+  // 진행중/미완료 → Brain Dump에 재생성(또는 업데이트), isMust·mustSourceId 복원
   function changeStatus(block, newStatus) {
     saveBlock({ ...block, status: newStatus })
 
     if (newStatus === 'done') {
-      // Brain Dump에서 이 블록에서 파생된 항목 제거
       setBrainItems(prev => prev.filter(bi => bi.sourceBlockId !== block.id))
-      // Must Todo에서도 제거 (원본 Brain Dump 아이템이 must였을 경우)
       setMustTodos(prev => prev.filter(t => t.sourceId !== block.sourceId))
       return
     }
 
-    // 진행중 / 미완료 → Brain Dump에 재생성 또는 업데이트
     const persistedStatus = newStatus === 'in-progress' ? 'in-progress' : 'none'
+    // mustSourceId: Must Todo 체인 보존 (원본 Brain Dump id → Must Todo.sourceId)
+    const mustSourceId = block.isMust ? block.sourceId : undefined
+
     setBrainItems(prev => {
       const existingIdx = prev.findIndex(bi => bi.sourceBlockId === block.id)
-      if (existingIdx >= 0) {
-        return prev.map(bi =>
-          bi.sourceBlockId === block.id ? { ...bi, persistedStatus } : bi
-        )
-      }
-      return [{
-        id: `bd${Date.now()}`,
+      const recreated = {
+        id: existingIdx >= 0 ? prev[existingIdx].id : `bd${Date.now()}`,
         text: block.text,
-        isMust: false,
+        isMust: block.isMust || false,
         persistedStatus,
         sourceBlockId: block.id,
-        createdAt: new Date().toISOString(),
-      }, ...prev]
+        mustSourceId,
+        createdAt: existingIdx >= 0 ? prev[existingIdx].createdAt : new Date().toISOString(),
+      }
+      if (existingIdx >= 0) {
+        return prev.map((bi, i) => i === existingIdx ? recreated : bi)
+      }
+      return [recreated, ...prev]
     })
   }
 
@@ -204,6 +204,21 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     if (!raw) return
     try {
       const item = JSON.parse(raw)
+
+      // sourceBlockId가 있으면 원본 블록의 sourceId를 이어받아 Must Todo 체인 보존
+      // 없으면 현재 Brain Dump 아이템의 id를 사용
+      let inheritedSourceId = item.mustSourceId || item.id
+      if (item.sourceBlockId) {
+        // 모든 날짜에서 원본 블록 탐색
+        for (const dateBlocks of Object.values(timeboxBlocks)) {
+          const origBlock = (dateBlocks || []).map(migrate).find(b => b.id === item.sourceBlockId)
+          if (origBlock?.sourceId) {
+            inheritedSourceId = origBlock.sourceId
+            break
+          }
+        }
+      }
+
       const colorIdx = dayBlocks.length % BLOCK_COLORS.length
       const newBlock = {
         id: `tb${Date.now()}`,
@@ -212,7 +227,8 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         durationSlots: 2,
         status: item.persistedStatus === 'in-progress' ? 'in-progress' : 'todo',
         color: BLOCK_COLORS[colorIdx],
-        sourceId: item.id,
+        sourceId: inheritedSourceId,
+        isMust: item.isMust || false,
       }
       setTimeboxBlocks(prev => ({
         ...prev,
