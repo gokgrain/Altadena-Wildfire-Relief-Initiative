@@ -19,7 +19,7 @@ export default function App() {
   return (
     <div
       className="flex h-screen w-screen overflow-hidden"
-      style={{ background: '#0f0f13' }}
+      style={{ background: '#f5f5f7' }}
     >
       <Sidebar page={page} setPage={setPage} />
 

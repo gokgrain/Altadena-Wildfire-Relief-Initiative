@@ -6,7 +6,7 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
   return (
     <div className="flex-shrink-0 px-3 pt-2.5 pb-2" style={{ maxHeight: '38%', overflowY: 'auto' }}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: '#ffffff30' }}>
+        <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: '#aeaeb2' }}>
           Weekly Must Todo
         </span>
       </div>
@@ -17,20 +17,21 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
             key={todo.id}
             className="flex items-center gap-2 px-2 py-2 rounded-lg group relative"
             style={{
-              background: 'linear-gradient(90deg, #7c5cfc14, #6366f108)',
-              borderLeft: '2px solid #7c5cfc55',
+              background: 'linear-gradient(90deg, #5856d610, #5856d606)',
+              borderLeft: '2px solid #5856d640',
             }}
           >
-            <Star size={10} style={{ color: '#a78bfa', fill: '#a78bfa', flexShrink: 0 }} />
+            <Star size={10} style={{ color: '#5856d6', fill: '#5856d6', flexShrink: 0 }} />
             <span
               className="flex-1 truncate font-semibold"
-              style={{ fontSize: 12, color: '#c4b5fd', letterSpacing: '0.01em' }}
+              style={{ fontSize: 12, color: '#5856d6', letterSpacing: '0.01em' }}
             >
               {todo.text}
             </span>
             <button
               onClick={() => setMustTodos(prev => prev.filter(t => t.id !== todo.id))}
-              className="icon-btn opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-rose-400 flex-shrink-0"
+              className="icon-btn opacity-0 group-hover:opacity-60 hover:!opacity-100 flex-shrink-0"
+              style={{ color: '#ff3b30' }}
             >
               <X size={10} />
             </button>
@@ -38,7 +39,7 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
         ))}
 
         {mustTodos.length === 0 && (
-          <p className="text-[10px] py-1 px-1" style={{ color: '#ffffff15' }}>
+          <p className="text-[10px] py-1 px-1" style={{ color: '#c7c7cc' }}>
             Brain Dump에서 ⭐ must를 눌러 추가하세요
           </p>
         )}
@@ -52,7 +53,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
   const [hovered, setHovered] = useState(false)
 
   const isInProgress = item.persistedStatus === 'in-progress'
-  const isScheduled = !!item.sourceBlockId  // Timebox에서 돌아온 항목
+  const isScheduled = !!item.sourceBlockId
 
   return (
     <div
@@ -60,7 +61,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
       onDragStart={onDragStart}
       className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
       style={{
-        background: hovered ? '#ffffff06' : 'transparent',
+        background: hovered ? '#00000005' : 'transparent',
         cursor: 'grab',
       }}
       onMouseEnter={() => setHovered(true)}
@@ -69,16 +70,16 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
       {/* Drag handle indicator */}
       <div
         className="flex-shrink-0 transition-colors"
-        style={{ color: hovered ? '#ffffff30' : 'transparent' }}
+        style={{ color: hovered ? '#aeaeb2' : 'transparent' }}
       >
         <GripVertical size={13} />
       </div>
 
       {/* Bullet */}
-      <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#ffffff25' }} />
+      <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#c7c7cc' }} />
 
       {/* Text */}
-      <span className="text-xs flex-1 min-w-0 truncate" style={{ color: '#ffffff70' }}>
+      <span className="text-xs flex-1 min-w-0 truncate" style={{ color: '#86868b' }}>
         {item.text}
       </span>
 
@@ -86,7 +87,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
       {isScheduled && (
         <span
           className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
-          style={{ background: '#7c5cfc18', color: '#a78bfa', border: '1px solid #7c5cfc30' }}
+          style={{ background: '#5856d610', color: '#5856d6', border: '1px solid #5856d625' }}
         >
           배치중
         </span>
@@ -96,7 +97,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
       {isInProgress && (
         <span
           className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
-          style={{ background: '#f59e0b18', color: '#f59e0b', border: '1px solid #f59e0b30' }}
+          style={{ background: '#ff950015', color: '#ff9500', border: '1px solid #ff950025' }}
         >
           진행중
         </span>
@@ -109,18 +110,19 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
             onClick={onMust}
             className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
             style={{
-              background: item.isMust ? '#7c5cfc30' : '#ffffff0f',
-              color: item.isMust ? '#a78bfa' : '#ffffff40',
-              border: `1px solid ${item.isMust ? '#7c5cfc50' : '#ffffff15'}`,
+              background: item.isMust ? '#5856d614' : '#00000008',
+              color: item.isMust ? '#5856d6' : '#86868b',
+              border: `1px solid ${item.isMust ? '#5856d635' : '#00000012'}`,
             }}
             title="Weekly Must Todo로 추가"
           >
-            <Star size={9} fill={item.isMust ? '#a78bfa' : 'none'} />
+            <Star size={9} fill={item.isMust ? '#5856d6' : 'none'} />
             must
           </button>
           <button
             onClick={onDelete}
-            className="icon-btn opacity-50 hover:opacity-100 hover:text-rose-400"
+            className="icon-btn opacity-50 hover:opacity-100"
+            style={{ color: '#ff3b30' }}
           >
             <Trash2 size={11} />
           </button>
@@ -152,7 +154,6 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
     setBrainItems(prev => prev.map(i => i.id === item.id ? { ...i, isMust: !i.isMust } : i))
 
     if (!item.isMust) {
-      // Must 추가: mustSourceId(원본 id) 또는 item.id 기준으로 중복 확인
       const lookupId = item.mustSourceId || item.id
       const exists = mustTodos.some(t => t.sourceId === lookupId)
       if (!exists) {
@@ -164,7 +165,6 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
         }])
       }
     } else {
-      // Must 해제
       const lookupId = item.mustSourceId || item.id
       setMustTodos(prev => prev.filter(t => t.sourceId !== lookupId))
     }
@@ -185,7 +185,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
       isMust: item.isMust || false,
       mustSourceId: item.mustSourceId || null,
       sourceBlockId: item.sourceBlockId || null,
-      createdAt: item.createdAt || null,   // Brain Dump 입력일 (소요일수 계산용)
+      createdAt: item.createdAt || null,
     }))
     e.dataTransfer.effectAllowed = 'move'
   }
@@ -196,7 +196,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
       <MustTodoSection mustTodos={mustTodos} setMustTodos={setMustTodos} />
 
       {/* 구분선 */}
-      <div style={{ height: 1, background: '#ffffff08', flexShrink: 0 }} />
+      <div style={{ height: 1, background: '#0000000a', flexShrink: 0 }} />
 
       {/* Brain Dump 헤더 */}
       <div className="panel-header flex-shrink-0">
@@ -204,19 +204,19 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
           <span className="panel-title">Brain Dump</span>
           <span
             className="text-[9px] px-1.5 py-0.5 rounded"
-            style={{ background: '#ffffff08', color: '#ffffff25' }}
+            style={{ background: '#f5f5f7', color: '#aeaeb2' }}
           >
             {brainItems.length}
           </span>
         </div>
-        <span className="text-[9px]" style={{ color: '#ffffff15' }}>⠿ 드래그 → 타임박스</span>
+        <span className="text-[9px]" style={{ color: '#c7c7cc' }}>⠿ 드래그 → 타임박스</span>
       </div>
 
       {/* 항목 리스트 */}
       <div className="flex-1 overflow-y-auto px-1 py-1">
         {brainItems.length === 0 && (
           <div className="flex items-center justify-center h-full pb-8">
-            <p className="text-[11px]" style={{ color: '#ffffff15' }}>머릿속 할 일을 모두 쏟아내세요</p>
+            <p className="text-[11px]" style={{ color: '#c7c7cc' }}>머릿속 할 일을 모두 쏟아내세요</p>
           </div>
         )}
         {brainItems.map(item => (
@@ -233,7 +233,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
       {/* 입력창 */}
       <div
         className="flex-shrink-0 flex items-center gap-2 px-3 py-2.5"
-        style={{ borderTop: '1px solid #ffffff08' }}
+        style={{ borderTop: '1px solid #0000000a' }}
       >
         <input
           ref={inputRef}
@@ -242,7 +242,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
           onKeyDown={e => { if (e.key === 'Enter') addItem() }}
           placeholder="할 일을 입력하고 Enter..."
           className="flex-1 bg-transparent text-xs outline-none"
-          style={{ color: '#ffffff70' }}
+          style={{ color: '#86868b' }}
         />
         <button
           onClick={addItem}

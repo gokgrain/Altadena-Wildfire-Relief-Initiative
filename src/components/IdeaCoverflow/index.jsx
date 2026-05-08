@@ -10,7 +10,6 @@ const SAMPLE_CARDS = [
 ]
 
 function CoverCard({ card, position, onClick, isFlipped }) {
-  // position: -2 -1 0 1 2 (0 = center)
   const abs = Math.abs(position)
   const scale = abs === 0 ? 1 : abs === 1 ? 0.82 : 0.65
   const translateX = position * 90
@@ -47,7 +46,6 @@ function CoverCard({ card, position, onClick, isFlipped }) {
           transition: 'transform 0.5s ease',
         }}
       >
-        {/* Placeholder cover art */}
         <div
           className="w-full h-full flex flex-col items-center justify-center relative"
           style={{ background: `linear-gradient(135deg, ${card.bg}, ${card.color}22)` }}
@@ -56,7 +54,7 @@ function CoverCard({ card, position, onClick, isFlipped }) {
             className="w-20 h-20 rounded-full mb-2"
             style={{ background: `radial-gradient(circle at 35% 35%, ${card.color}80, ${card.color}20)` }}
           />
-          <span className="text-[10px] font-bold text-white/60">{card.title}</span>
+          <span className="text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.6)' }}>{card.title}</span>
         </div>
       </div>
 
@@ -64,13 +62,13 @@ function CoverCard({ card, position, onClick, isFlipped }) {
       <div
         className="absolute inset-0 rounded-xl flex items-center justify-center p-4"
         style={{
-          background: '#1a1a22',
+          background: '#f0f0f5',
           backfaceVisibility: 'hidden',
           transform: isFlipped ? 'rotateY(0)' : 'rotateY(-180deg)',
           transition: 'transform 0.5s ease',
         }}
       >
-        <p className="text-[11px] text-white/60 text-center leading-relaxed font-medium">
+        <p className="text-[11px] text-center leading-relaxed font-medium" style={{ color: '#1d1d1f' }}>
           {card.memo}
         </p>
       </div>
@@ -119,7 +117,7 @@ export default function IdeaCoverflow() {
           className="absolute inset-x-0 bottom-0 pointer-events-none"
           style={{
             height: '35%',
-            background: 'linear-gradient(to bottom, transparent, #16161c)',
+            background: 'linear-gradient(to bottom, transparent, #ffffff)',
           }}
         />
       </div>
@@ -127,20 +125,20 @@ export default function IdeaCoverflow() {
       {/* Now playing bar */}
       <div
         className="flex-shrink-0 flex items-center gap-3 px-4 py-3"
-        style={{ borderTop: '1px solid #ffffff0f' }}
+        style={{ borderTop: '1px solid #0000000f' }}
       >
         <button
           onClick={() => setPlaying(p => !p)}
           className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
-          style={{ background: '#ffffff15' }}
+          style={{ background: '#00000008' }}
         >
           {playing
-            ? <Pause size={12} className="text-white/60" />
-            : <Play size={12} className="text-white/60 ml-0.5" />}
+            ? <Pause size={12} style={{ color: '#86868b' }} />
+            : <Play size={12} style={{ color: '#86868b', marginLeft: 1 }} />}
         </button>
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-semibold text-white/70 truncate">{active.title}</div>
-          <div className="text-[10px] text-white/30 truncate">{active.subtitle.replace('\n', ' · ')}</div>
+          <div className="text-[11px] font-semibold truncate" style={{ color: '#1d1d1f' }}>{active.title}</div>
+          <div className="text-[10px] truncate" style={{ color: '#86868b' }}>{active.subtitle.replace('\n', ' · ')}</div>
         </div>
         <button
           onClick={() => setFlipped(f => !f)}

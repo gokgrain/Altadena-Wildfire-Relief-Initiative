@@ -4,15 +4,15 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 // ── 상수 ──────────────────────────────────────────────────
 const START_HOUR = 5
 const END_HOUR = 24
-const SLOT_HEIGHT = 28          // px per 30-min slot
+const SLOT_HEIGHT = 28
 const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2
 const DAYS = ['월', '화', '수', '목', '금', '토', '일']
-const BLOCK_COLORS = ['#7c5cfc', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#6366f1']
+const BLOCK_COLORS = ['#5856d6', '#00c7be', '#34c759', '#ff9500', '#ff3b30', '#5e5ce6']
 
 const STATUS = {
-  todo:          { label: '미완료', color: '#f43f5e',  bg: '#f43f5e14', accent: '#f43f5e50' },
-  'in-progress': { label: '진행중',  color: '#f59e0b',  bg: '#f59e0b14', accent: '#f59e0b50' },
-  done:          { label: '완료',    color: '#10b981',  bg: '#10b98114', accent: '#10b98150' },
+  todo:          { label: '미완료', color: '#ff3b30',  bg: '#ff3b3012', accent: '#ff3b3040' },
+  'in-progress': { label: '진행중',  color: '#ff9500',  bg: '#ff950012', accent: '#ff950040' },
+  done:          { label: '완료',    color: '#34c759',  bg: '#34c75912', accent: '#34c75940' },
 }
 const STATUS_KEYS = ['todo', 'in-progress', 'done']
 
@@ -46,7 +46,6 @@ function getWeekLabel(dates) {
 
 function dateKey(d) { return d.toISOString().slice(0, 10) }
 
-// 해당 날짜가 속한 주의 월요일 날짜를 weekKey로 사용 (통계용)
 function getWeekKey(date) {
   const d = new Date(date)
   const day = d.getDay()
@@ -112,7 +111,6 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     if (!block) return
 
     setBrainItems(prev => {
-      // 같은 원본 할일(taskSourceId)이 이미 Brain Dump에 있으면 중복 생성 안 함
       const alreadyExists = prev.some(bi => bi.taskSourceId === block.sourceId)
       const filtered = prev.filter(bi => bi.sourceBlockId !== id)
       if (alreadyExists) return filtered
@@ -129,15 +127,11 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
   }
 
   // ── 상태 변경 ────────────────────────────────────────────
-  // 블록은 Timebox에 항상 영구보존.
-  // 완료 → Brain Dump 재생성 항목 + Must Todo 제거
-  // 진행중/미완료 → Brain Dump에 재생성(또는 업데이트), isMust·mustSourceId 복원
   function changeStatus(block, newStatus) {
     if (newStatus === 'done') {
       const completedAt = new Date().toISOString()
       saveBlock({ ...block, status: 'done', completedAt })
       setBrainItems(prev => prev.filter(bi => bi.sourceBlockId !== block.id))
-      // 삭제 대신 완료 기록으로 보존 (통계용)
       setMustTodos(prev => prev.map(t =>
         t.sourceId === block.sourceId
           ? { ...t, done: true, completedAt, weekKey: getWeekKey(completedAt) }
@@ -153,7 +147,6 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     const taskSourceId = block.sourceId
 
     setBrainItems(prev => {
-      // sourceBlockId(이 블록 전용) 또는 taskSourceId(같은 원본 할일) 기준으로 기존 항목 탐색
       const existingIdx = prev.findIndex(bi =>
         bi.sourceBlockId === block.id || bi.taskSourceId === taskSourceId
       )
@@ -245,11 +238,8 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     try {
       const item = JSON.parse(raw)
 
-      // sourceBlockId가 있으면 원본 블록의 sourceId를 이어받아 Must Todo 체인 보존
-      // 없으면 현재 Brain Dump 아이템의 id를 사용
       let inheritedSourceId = item.mustSourceId || item.id
       if (item.sourceBlockId) {
-        // 모든 날짜에서 원본 블록 탐색
         for (const dateBlocks of Object.values(timeboxBlocks)) {
           const origBlock = (dateBlocks || []).map(migrate).find(b => b.id === item.sourceBlockId)
           if (origBlock?.sourceId) {
@@ -269,14 +259,13 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         color: BLOCK_COLORS[colorIdx],
         sourceId: inheritedSourceId,
         isMust: item.isMust || false,
-        brainCreatedAt: item.createdAt || null,   // Brain Dump 입력일 (소요일수 계산용)
-        scheduledAt: new Date().toISOString(),     // 타임박스에 배치된 시각
+        brainCreatedAt: item.createdAt || null,
+        scheduledAt: new Date().toISOString(),
       }
       setTimeboxBlocks(prev => ({
         ...prev,
         [selectedDate]: [...(prev[selectedDate] || []).map(migrate), newBlock],
       }))
-      // Brain Dump에서 제거
       setBrainItems(prev => prev.filter(bi => bi.id !== item.id))
     } catch { /* ignore */ }
   }
@@ -290,7 +279,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
           <button className="icon-btn" onClick={() => setWeekOffset(o => o - 1)}>
             <ChevronLeft size={12} />
           </button>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#ffffff60', minWidth: 90, textAlign: 'center' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#86868b', minWidth: 90, textAlign: 'center' }}>
             {getWeekLabel(dates)}
           </span>
           <button className="icon-btn" onClick={() => setWeekOffset(o => o + 1)}>
@@ -300,18 +289,18 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
             <button
               className="icon-btn"
               onClick={() => { setWeekOffset(0); setSelectedDay(todayIdx) }}
-              style={{ fontSize: 8, color: '#7c5cfc90', padding: '1px 4px' }}
+              style={{ fontSize: 8, color: '#5856d6', padding: '1px 4px' }}
               title="오늘로 이동"
             >
               오늘
             </button>
           )}
         </div>
-        <span style={{ fontSize: 9, color: '#ffffff20' }}>⠿ 드래그 → 배치·이동</span>
+        <span style={{ fontSize: 9, color: '#aeaeb2' }}>⠿ 드래그 → 배치·이동</span>
       </div>
 
       {/* 요일 탭 */}
-      <div className="flex-shrink-0 flex" style={{ borderBottom: '1px solid #ffffff0f' }}>
+      <div className="flex-shrink-0 flex" style={{ borderBottom: '1px solid #0000000f' }}>
         {DAYS.map((d, i) => {
           const isToday = isSameDay(dates[i], today)
           const isSelected = i === selectedDay
@@ -320,15 +309,15 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
               key={d}
               onClick={() => setSelectedDay(i)}
               className="flex-1 flex flex-col items-center py-1.5 gap-0.5 transition-colors"
-              style={{ borderBottom: isSelected ? '2px solid #7c5cfc' : '2px solid transparent' }}
+              style={{ borderBottom: isSelected ? '2px solid #5856d6' : '2px solid transparent' }}
             >
-              <span style={{ fontSize: 9, color: isSelected ? '#a78bfa' : '#ffffff20' }}>{d}</span>
+              <span style={{ fontSize: 9, color: isSelected ? '#5856d6' : '#aeaeb2' }}>{d}</span>
               <span style={{
                 fontSize: 11, fontWeight: 600, width: 18, height: 18,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 borderRadius: '50%',
-                background: isToday ? '#f43f5e' : 'transparent',
-                color: isToday ? '#fff' : isSelected ? '#a78bfa' : '#ffffff25',
+                background: isToday ? '#ff3b30' : 'transparent',
+                color: isToday ? '#fff' : isSelected ? '#5856d6' : '#aeaeb2',
               }}>
                 {dates[i].getDate()}
               </span>
@@ -357,12 +346,12 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                 <span style={{
                   position: 'absolute', left: 4, top: 0,
                   fontSize: 9, lineHeight: `${SLOT_HEIGHT}px`,
-                  color: '#ffffff18', fontFamily: 'monospace', userSelect: 'none',
+                  color: '#c7c7cc', fontFamily: 'monospace', userSelect: 'none',
                 }}>
                   {hour}
                 </span>
-                <div style={{ position: 'absolute', left: 34, right: 4, top: 0, height: 1, background: '#ffffff0d' }} />
-                <div style={{ position: 'absolute', left: 34, right: 4, top: SLOT_HEIGHT, height: 1, background: '#ffffff05' }} />
+                <div style={{ position: 'absolute', left: 34, right: 4, top: 0, height: 1, background: '#00000008' }} />
+                <div style={{ position: 'absolute', left: 34, right: 4, top: SLOT_HEIGHT, height: 1, background: '#00000005' }} />
               </div>
             )
           })}
@@ -374,14 +363,14 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
               top: dragOverSlot * SLOT_HEIGHT,
               left: 38, right: 4,
               height: 2 * SLOT_HEIGHT - 2,
-              border: '1.5px dashed #7c5cfc60',
+              border: '1.5px dashed #5856d650',
               borderRadius: 6,
-              background: '#7c5cfc08',
+              background: '#5856d608',
               pointerEvents: 'none',
               zIndex: 5,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ fontSize: 9, color: '#7c5cfc80' }}>놓기</span>
+              <span style={{ fontSize: 9, color: '#5856d6' }}>놓기</span>
             </div>
           )}
 
@@ -405,13 +394,13 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                   top: block.startSlot * SLOT_HEIGHT + 1,
                   left: 38, right: 4,
                   height: blockH,
-                  background: block.color + '18',
+                  background: block.color + '14',
                   borderLeft: `3px solid ${block.color}`,
                   borderRadius: 6,
                   overflow: 'hidden',
                   zIndex: isMoving ? 3 : 10,
                   opacity: isMoving ? 0.35 : 1,
-                  boxShadow: isHov ? `0 0 0 1px ${block.color}35` : 'none',
+                  boxShadow: isHov ? `0 0 0 1px ${block.color}30` : 'none',
                   cursor: 'grab',
                   transition: 'box-shadow 0.1s, opacity 0.1s',
                 }}
@@ -422,14 +411,14 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                 <div style={{ padding: '4px 22px 4px 6px', paddingBottom: isHov ? 26 : 4 }}>
                   <div style={{
                     fontSize: 11, lineHeight: 1.3,
-                    color: isDone ? '#ffffff30' : '#ffffff75',
+                    color: isDone ? '#aeaeb2' : '#1d1d1f',
                     textDecoration: isDone ? 'line-through' : 'none',
                     wordBreak: 'break-word',
                   }}>
                     {block.text}
                   </div>
                   {blockH >= 36 && (
-                    <div style={{ fontSize: 9, color: '#ffffff20', marginTop: 2 }}>
+                    <div style={{ fontSize: 9, color: '#aeaeb2', marginTop: 2 }}>
                       {slotToTime(block.startSlot)} – {slotToTime(block.startSlot + liveSlots)}
                     </div>
                   )}
@@ -451,8 +440,8 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                           style={{
                             flex: 1, padding: '2px 0', borderRadius: 4,
                             fontSize: 9, fontWeight: 700, cursor: 'pointer',
-                            background: active ? s.bg : '#ffffff06',
-                            color: active ? s.color : '#ffffff25',
+                            background: active ? s.bg : '#00000006',
+                            color: active ? s.color : '#aeaeb2',
                             border: active ? `1px solid ${s.accent}` : '1px solid transparent',
                             transition: 'all 0.12s',
                           }}
@@ -470,17 +459,17 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                     onClick={e => { e.stopPropagation(); removeBlock(block.id) }}
                     style={{
                       position: 'absolute', top: 3, right: 3,
-                      color: '#ffffff25', cursor: 'pointer', padding: 2, borderRadius: 3,
+                      color: '#aeaeb2', cursor: 'pointer', padding: 2, borderRadius: 3,
                       lineHeight: 0,
                     }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#f43f5e'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#ffffff25'}
+                    onMouseEnter={e => e.currentTarget.style.color = '#ff3b30'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#aeaeb2'}
                   >
                     <X size={10} />
                   </button>
                 )}
 
-                {/* 리사이즈 핸들 (블록 드래그와 분리) */}
+                {/* 리사이즈 핸들 */}
                 <div
                   draggable={false}
                   onMouseDown={e => handleResizeStart(e, block)}
@@ -489,13 +478,13 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                     position: 'absolute', bottom: 0, left: 0, right: 0, height: 8,
                     cursor: 's-resize',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: isHov ? block.color + '25' : 'transparent',
-                    borderTop: isHov ? `1px solid ${block.color}35` : '1px solid transparent',
+                    background: isHov ? block.color + '18' : 'transparent',
+                    borderTop: isHov ? `1px solid ${block.color}25` : '1px solid transparent',
                     transition: 'all 0.1s',
                   }}
                 >
                   {isHov && (
-                    <div style={{ width: 20, height: 2, borderRadius: 1, background: block.color + '70' }} />
+                    <div style={{ width: 20, height: 2, borderRadius: 1, background: block.color + '60' }} />
                   )}
                 </div>
               </div>

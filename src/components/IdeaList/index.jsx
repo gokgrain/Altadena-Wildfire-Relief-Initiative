@@ -4,11 +4,11 @@ import { Plus, FileText, ChevronDown } from 'lucide-react'
 const TYPES = ['전체', '유튜브', '블로그', '인스타', '뉴스레터', '기타']
 
 const TYPE_COLORS = {
-  '유튜브': '#f43f5e',
-  '블로그': '#6366f1',
-  '인스타': '#ec4899',
-  '뉴스레터': '#f59e0b',
-  '기타': '#6b7280',
+  '유튜브': '#ff3b30',
+  '블로그': '#5856d6',
+  '인스타': '#ff2d55',
+  '뉴스레터': '#ff9500',
+  '기타': '#aeaeb2',
 }
 
 const SAMPLE_IDEAS = [
@@ -39,17 +39,17 @@ export default function IdeaList() {
       {/* Type filter tabs */}
       <div
         className="flex-shrink-0 flex items-center gap-1 px-3 py-2 overflow-x-auto"
-        style={{ borderBottom: '1px solid #ffffff0f' }}
+        style={{ borderBottom: '1px solid #0000000f' }}
       >
         {TYPES.map(type => (
           <button
             key={type}
             onClick={() => setActiveType(type)}
-            className={`flex-shrink-0 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors duration-150
-              ${activeType === type
-                ? 'bg-white/10 text-white/80'
-                : 'text-white/30 hover:text-white/50 hover:bg-white/5'
-              }`}
+            className="flex-shrink-0 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors duration-150"
+            style={{
+              background: activeType === type ? '#00000008' : 'transparent',
+              color: activeType === type ? '#1d1d1f' : '#aeaeb2',
+            }}
           >
             {type}
           </button>
@@ -58,10 +58,11 @@ export default function IdeaList() {
 
       {/* Column headers */}
       <div
-        className="flex-shrink-0 grid text-[9px] font-semibold tracking-widest uppercase text-white/20 px-3 py-2"
+        className="flex-shrink-0 grid text-[9px] font-semibold tracking-widest uppercase px-3 py-2"
         style={{
           gridTemplateColumns: '1fr 80px 60px 60px',
-          borderBottom: '1px solid #ffffff08',
+          borderBottom: '1px solid #00000008',
+          color: '#aeaeb2',
         }}
       >
         <span>제목</span>
@@ -78,15 +79,15 @@ export default function IdeaList() {
               className="grid items-center px-3 py-2.5 cursor-pointer transition-colors duration-100"
               style={{
                 gridTemplateColumns: '1fr 80px 60px 60px',
-                background: hovered === idea.id ? '#ffffff05' : 'transparent',
+                background: hovered === idea.id ? '#00000005' : 'transparent',
               }}
               onMouseEnter={() => setHovered(idea.id)}
               onMouseLeave={() => setHovered(null)}
             >
               {/* Title */}
               <div className="flex items-center gap-2 min-w-0">
-                <FileText size={11} className="text-white/20 flex-shrink-0" />
-                <span className="text-[11px] text-white/60 truncate">{idea.title}</span>
+                <FileText size={11} className="flex-shrink-0" style={{ color: '#c7c7cc' }} />
+                <span className="text-[11px] truncate" style={{ color: '#1d1d1f' }}>{idea.title}</span>
               </div>
 
               {/* Type badge */}
@@ -94,8 +95,8 @@ export default function IdeaList() {
                 <span
                   className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold"
                   style={{
-                    background: (TYPE_COLORS[idea.type] || '#6b7280') + '20',
-                    color: TYPE_COLORS[idea.type] || '#9ca3af',
+                    background: (TYPE_COLORS[idea.type] || '#aeaeb2') + '18',
+                    color: TYPE_COLORS[idea.type] || '#aeaeb2',
                   }}
                 >
                   {idea.type}
@@ -103,21 +104,26 @@ export default function IdeaList() {
               </div>
 
               {/* Author */}
-              <span className="text-[10px] text-white/30">{idea.author}</span>
+              <span className="text-[10px]" style={{ color: '#86868b' }}>{idea.author}</span>
 
               {/* Date */}
-              <span className="text-[10px] text-white/25 text-right">{idea.date}</span>
+              <span className="text-[10px] text-right" style={{ color: '#aeaeb2' }}>{idea.date}</span>
             </div>
 
             {/* Row divider */}
             {idx < filtered.length - 1 && (
-              <div style={{ height: 1, background: '#ffffff05', margin: '0 12px' }} />
+              <div style={{ height: 1, background: '#00000008', margin: '0 12px' }} />
             )}
           </div>
         ))}
 
         {/* Add new row */}
-        <button className="flex items-center gap-2 px-3 py-2.5 text-white/20 hover:text-white/40 transition-colors w-full">
+        <button
+          className="flex items-center gap-2 px-3 py-2.5 transition-colors w-full"
+          style={{ color: '#c7c7cc' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#86868b'}
+          onMouseLeave={e => e.currentTarget.style.color = '#c7c7cc'}
+        >
           <Plus size={11} />
           <span className="text-[11px]">새 페이지</span>
         </button>
