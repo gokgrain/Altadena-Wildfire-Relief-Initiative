@@ -22,6 +22,7 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
   const zIndex = 10 - abs
   const opacity = abs > 2 ? 0 : 1
   const cs = getCardStyle(idea.type)
+  const hasImage = !!idea.image
 
   return (
     <div
@@ -45,32 +46,66 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
           backfaceVisibility: 'hidden',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
           transition: 'transform 0.5s ease',
-          background: `linear-gradient(145deg, ${cs.bg} 0%, ${cs.accent}28 100%)`,
         }}
       >
-        <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6">
-          <div
-            className="w-24 h-24 rounded-full"
-            style={{ background: `radial-gradient(circle at 35% 30%, ${cs.accent}90, ${cs.accent}18)` }}
-          />
-          <span
-            className="text-[12px] font-bold text-center leading-tight px-2"
-            style={{ color: 'rgba(255,255,255,0.80)' }}
-          >
-            {idea.title}
-          </span>
-          <span
-            className="text-[9px] font-bold px-2.5 py-0.5 rounded-full"
-            style={{ background: cs.accent + '35', color: cs.accent }}
-          >
-            {idea.type}
-          </span>
-        </div>
+        {hasImage ? (
+          /* 이미지 카드 */
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <img
+              src={idea.image}
+              alt={idea.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            {/* 하단 그라데이션 오버레이 */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.08) 55%, transparent 100%)',
+            }} />
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              padding: '10px 12px',
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.92)', lineHeight: 1.3 }}>
+                {idea.title}
+              </span>
+              <span style={{
+                alignSelf: 'flex-start',
+                fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+                background: cs.accent + '55', color: cs.accent,
+                backdropFilter: 'blur(4px)',
+              }}>
+                {idea.type}
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* 이미지 없을 때 그라데이션 카드 */
+          <div style={{
+            width: '100%', height: '100%',
+            background: `linear-gradient(145deg, ${cs.bg} 0%, ${cs.accent}28 100%)`,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24,
+          }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%',
+              background: `radial-gradient(circle at 35% 30%, ${cs.accent}90, ${cs.accent}18)`,
+            }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.80)', textAlign: 'center', lineHeight: 1.35 }}>
+              {idea.title}
+            </span>
+            <span style={{
+              fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 99,
+              background: cs.accent + '35', color: cs.accent,
+            }}>
+              {idea.type}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* 뒷면 */}
+      {/* 뒷면 — 한 줄 기록 */}
       <div
-        className="absolute inset-0 rounded-2xl flex items-center justify-center p-6"
+        className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 gap-3"
         style={{
           background: '#f0f0f5',
           backfaceVisibility: 'hidden',
@@ -79,12 +114,21 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
           boxShadow: '0 16px 48px rgba(0,0,0,0.12)',
         }}
       >
-        <p
-          className="text-[12px] text-center leading-relaxed"
-          style={{ color: idea.memo ? '#1d1d1f' : '#aeaeb2', fontStyle: idea.memo ? 'normal' : 'italic' }}
-        >
-          {idea.memo || '메모 없음'}
+        {/* 한 줄 기록 */}
+        <p style={{
+          fontSize: 14, fontWeight: 600, textAlign: 'center', lineHeight: 1.5,
+          color: idea.oneliner ? '#1d1d1f' : '#c7c7cc',
+          fontStyle: idea.oneliner ? 'normal' : 'italic',
+        }}>
+          {idea.oneliner || '한 줄 기록 없음'}
         </p>
+
+        {/* 제작진 (있으면 표시) */}
+        {idea.creators && (
+          <p style={{ fontSize: 10, color: '#86868b', textAlign: 'center' }}>
+            {idea.creators}
+          </p>
+        )}
       </div>
     </div>
   )
@@ -95,7 +139,6 @@ export default function IdeaCoverflow({ ideas }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [flipped, setFlipped] = useState(false)
 
-  // 아이디어 없을 때 빈 상태
   if (!ideas || ideas.length === 0) {
     return (
       <div className="panel h-full rounded-lg flex flex-col">
@@ -152,29 +195,22 @@ export default function IdeaCoverflow({ ideas }) {
       </div>
 
       {/* 정보 바 */}
-      <div
-        className="flex-shrink-0 flex items-center gap-3 px-4 py-3"
-        style={{ borderTop: '1px solid #0000000f' }}
-      >
-        <div
-          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: cs.accent + '18' }}
-        >
-          <div className="w-2 h-2 rounded-full" style={{ background: cs.accent }} />
-        </div>
+      <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3" style={{ borderTop: '1px solid #0000000f' }}>
+        {/* 썸네일 or 색상 dot */}
+        {active.image ? (
+          <img src={active.image} alt="" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+        ) : (
+          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: cs.accent + '18' }}>
+            <div className="w-2 h-2 rounded-full" style={{ background: cs.accent }} />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-semibold truncate" style={{ color: '#1d1d1f' }}>
-            {active.title}
-          </div>
+          <div className="text-[11px] font-semibold truncate" style={{ color: '#1d1d1f' }}>{active.title}</div>
           <div className="text-[10px] truncate" style={{ color: '#86868b' }}>
-            {active.type} · {new Date(active.createdAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+            {active.type}{active.creators ? ` · ${active.creators}` : ''}
           </div>
         </div>
-        <button
-          className="icon-btn"
-          onClick={() => setFlipped(f => !f)}
-          title="뒤집기"
-        >
+        <button className="icon-btn" onClick={() => setFlipped(f => !f)} title="뒤집기">
           <Info size={12} />
         </button>
       </div>
