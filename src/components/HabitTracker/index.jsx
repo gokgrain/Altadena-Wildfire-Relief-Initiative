@@ -3,12 +3,16 @@ import { Plus, Flame, Trash2, Check } from 'lucide-react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 
 // ── helpers ──────────────────────────────────────────────
+function toLocalDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function todayKey() {
-  return new Date().toISOString().slice(0, 10)
+  return toLocalDateKey(new Date())
 }
 
 function dateKey(date) {
-  return date.toISOString().slice(0, 10)
+  return toLocalDateKey(date)
 }
 
 function calcStreak(habitId, logs) {

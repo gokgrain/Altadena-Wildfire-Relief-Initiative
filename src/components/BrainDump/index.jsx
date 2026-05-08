@@ -38,7 +38,7 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
           </div>
         ))}
 
-        {mustTodos.length === 0 && (
+        {mustTodos.filter(t => !t.done).length === 0 && (
           <p className="text-[10px] py-1 px-1" style={{ color: '#c7c7cc' }}>
             Brain Dump에서 ⭐ must를 눌러 추가하세요
           </p>

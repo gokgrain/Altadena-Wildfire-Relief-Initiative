@@ -44,14 +44,18 @@ function getWeekLabel(dates) {
   return `${year}년 ${month}월 ${weekOfMonth}주차`
 }
 
-function dateKey(d) { return d.toISOString().slice(0, 10) }
+function toLocalDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function dateKey(d) { return toLocalDateKey(d) }
 
 function getWeekKey(date) {
   const d = new Date(date)
   const day = d.getDay()
   const monday = new Date(d)
   monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
-  return monday.toISOString().slice(0, 10)
+  return toLocalDateKey(monday)
 }
 
 function isSameDay(a, b) {
@@ -186,10 +190,13 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
       setResizeState(null)
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
+      window.removeEventListener('blur', onMouseUp)
     }
 
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
+    // 브라우저 밖에서 마우스 버튼을 놓았을 때도 resize 상태 해제
+    window.addEventListener('blur', onMouseUp)
   }
 
   // ── 드래그 오버 ──────────────────────────────────────────

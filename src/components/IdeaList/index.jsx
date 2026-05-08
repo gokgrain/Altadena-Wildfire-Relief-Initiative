@@ -14,16 +14,20 @@ const TYPE_COLORS = {
 }
 
 function formatDate(iso) {
+  if (!iso) return '--'
   const d = new Date(iso)
+  if (isNaN(d.getTime())) return '--'
   return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
 }
 
 // 이미지를 600px 이하 JPEG로 압축
 function resizeImage(file) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
+    reader.onerror = () => reject(new Error('파일 읽기 실패'))
     reader.onload = e => {
       const img = new Image()
+      img.onerror = () => reject(new Error('이미지 로드 실패'))
       img.onload = () => {
         const MAX = 600
         const ratio = Math.min(MAX / img.width, MAX / img.height, 1)
@@ -209,8 +213,12 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
   async function handleImageFile(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    const compressed = await resizeImage(file)
-    setForm(f => ({ ...f, image: compressed }))
+    try {
+      const compressed = await resizeImage(file)
+      setForm(f => ({ ...f, image: compressed }))
+    } catch {
+      // 유효하지 않은 이미지 파일 — 무시
+    }
   }
 
   function handleSave() {

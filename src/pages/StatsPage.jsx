@@ -3,7 +3,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 // ── Helpers ───────────────────────────────────────────────
-function dateKey(d) { return d.toISOString().slice(0, 10) }
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 function getWeekStart(date) {
   const d = new Date(date)
