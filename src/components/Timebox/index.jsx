@@ -1,26 +1,29 @@
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
-const DAYS_SHORT = ['월', '화', '수', '목', '금', '토', '일']
-const HOURS = Array.from({ length: 20 }, (_, i) => i + 5) // 5~24시
+// ── 상수 ──────────────────────────────────────────────────
+const START_HOUR = 5
+const END_HOUR = 24
+const SLOT_HEIGHT = 28          // px per 30-min slot
+const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2
+const DAYS = ['월', '화', '수', '목', '금', '토', '일']
+const BLOCK_COLORS = ['#7c5cfc', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#6366f1']
 
-// 상태 정의
 const STATUS = {
-  todo:        { label: '미완료', color: '#ffffff25', bg: '#ffffff08', dot: '#ffffff30' },
-  'in-progress': { label: '진행중', color: '#f59e0b',  bg: '#f59e0b15', dot: '#f59e0b' },
-  done:        { label: '완료',   color: '#10b981',  bg: '#10b98115', dot: '#10b981' },
+  todo:          { label: '미완료', color: '#ffffff40', bg: '#ffffff08', accent: '#ffffff20' },
+  'in-progress': { label: '진행중',  color: '#f59e0b',  bg: '#f59e0b14', accent: '#f59e0b50' },
+  done:          { label: '완료',    color: '#10b981',  bg: '#10b98114', accent: '#10b98150' },
 }
-const STATUS_ORDER = ['todo', 'in-progress', 'done']
+const STATUS_KEYS = ['todo', 'in-progress', 'done']
 
-function nextStatus(current) {
-  const idx = STATUS_ORDER.indexOf(current)
-  return STATUS_ORDER[(idx + 1) % STATUS_ORDER.length]
+// ── 헬퍼 ──────────────────────────────────────────────────
+function slotToTime(slot) {
+  const mins = slot * 30 + START_HOUR * 60
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return `${h}:${m === 0 ? '00' : m}`
 }
 
-// 날짜 helpers
-function todayKey() {
-  return new Date().toISOString().slice(0, 10)
-}
 function getWeekDates() {
   const now = new Date()
   const day = now.getDay()
@@ -32,80 +35,149 @@ function getWeekDates() {
     return d
   })
 }
-function dateKey(date) { return date.toISOString().slice(0, 10) }
+function dateKey(d) { return d.toISOString().slice(0, 10) }
 
-// 블록 색상 팔레트
-const BLOCK_COLORS = ['#7c5cfc', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#6366f1']
+// 구형 데이터(hour 기반) → 신형(startSlot 기반) 마이그레이션
+function migrate(block) {
+  if (block.startSlot !== undefined) return block
+  return {
+    ...block,
+    startSlot: block.hour !== undefined ? (block.hour - START_HOUR) * 2 : 0,
+    durationSlots: block.duration || 2,
+  }
+}
 
-export default function Timebox({ timeboxBlocks, setTimeboxBlocks }) {
+// ── 메인 컴포넌트 ─────────────────────────────────────────
+export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems }) {
   const dates = getWeekDates()
   const today = new Date()
   const todayIdx = (today.getDay() + 6) % 7
+
   const [selectedDay, setSelectedDay] = useState(todayIdx)
-  const [dragOverHour, setDragOverHour] = useState(null)
   const [hoveredBlock, setHoveredBlock] = useState(null)
+  const [dragOverSlot, setDragOverSlot] = useState(null)
+  const [resizeState, setResizeState] = useState(null) // { blockId, durationSlots }
+  const containerRef = useRef(null)
 
   const selectedDate = dateKey(dates[selectedDay])
-  const dayBlocks = timeboxBlocks[selectedDate] || []
+  const dayBlocks = (timeboxBlocks[selectedDate] || []).map(migrate)
 
-  // ── 블록 조작 ─────────────────────────────────────────
-  function addBlock(hour, text = '새 블록', color = BLOCK_COLORS[0]) {
-    const block = {
-      id: `tb${Date.now()}`,
-      text,
-      hour,
-      status: 'todo',
-      color,
-    }
-    setTimeboxBlocks(prev => ({
-      ...prev,
-      [selectedDate]: [...(prev[selectedDate] || []), block],
-    }))
+  // ── 블록 저장 ────────────────────────────────────────────
+  function saveBlock(block) {
+    setTimeboxBlocks(prev => {
+      const list = (prev[selectedDate] || []).map(migrate)
+      const idx = list.findIndex(b => b.id === block.id)
+      return {
+        ...prev,
+        [selectedDate]: idx >= 0 ? list.map(b => b.id === block.id ? block : b) : [...list, block],
+      }
+    })
   }
 
-  function deleteBlock(id) {
+  function removeBlock(id) {
     setTimeboxBlocks(prev => ({
       ...prev,
       [selectedDate]: (prev[selectedDate] || []).filter(b => b.id !== id),
     }))
   }
 
-  function cycleStatus(id) {
-    setTimeboxBlocks(prev => ({
-      ...prev,
-      [selectedDate]: (prev[selectedDate] || []).map(b =>
-        b.id === id ? { ...b, status: nextStatus(b.status) } : b
-      ),
-    }))
+  // ── 상태 변경 ────────────────────────────────────────────
+  // '완료' → Timebox에 유지
+  // '진행중'/'미완료' → Timebox에서 제거 후 BrainDump로 복귀
+  function changeStatus(block, newStatus) {
+    if (newStatus === 'done') {
+      saveBlock({ ...block, status: 'done' })
+      return
+    }
+    // 타임박스에서 제거
+    removeBlock(block.id)
+    // Brain Dump에 복귀 (persistedStatus 포함)
+    setBrainItems(prev => {
+      const alreadyExists = prev.some(i => i.sourceBlockId === block.id)
+      if (alreadyExists) {
+        return prev.map(i =>
+          i.sourceBlockId === block.id
+            ? { ...i, persistedStatus: newStatus === 'in-progress' ? 'in-progress' : 'none' }
+            : i
+        )
+      }
+      return [{
+        id: `bd${Date.now()}`,
+        text: block.text,
+        isMust: false,
+        persistedStatus: newStatus === 'in-progress' ? 'in-progress' : 'none',
+        sourceBlockId: block.id,
+        createdAt: new Date().toISOString(),
+      }, ...prev]
+    })
   }
 
-  // ── Drag & Drop ────────────────────────────────────────
-  function handleDragOver(e, hour) {
+  // ── 리사이즈 (30분 단위) ─────────────────────────────────
+  function handleResizeStart(e, block) {
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
-    setDragOverHour(hour)
+    e.stopPropagation()
+    const startY = e.clientY
+    const startDuration = block.durationSlots
+    let liveSlots = startDuration
+
+    function onMouseMove(ev) {
+      const delta = Math.round((ev.clientY - startY) / SLOT_HEIGHT)
+      liveSlots = Math.max(1, startDuration + delta)
+      setResizeState({ blockId: block.id, durationSlots: liveSlots })
+    }
+
+    function onMouseUp() {
+      saveBlock({ ...block, durationSlots: liveSlots })
+      setResizeState(null)
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
   }
 
-  function handleDrop(e, hour) {
+  // ── 드래그 & 드롭 ────────────────────────────────────────
+  function handleDragOver(e) {
     e.preventDefault()
-    setDragOverHour(null)
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const y = e.clientY - rect.top + containerRef.current.scrollTop
+    setDragOverSlot(Math.max(0, Math.min(TOTAL_SLOTS - 2, Math.floor(y / SLOT_HEIGHT))))
+  }
+
+  function handleDrop(e) {
+    e.preventDefault()
+    const slot = dragOverSlot ?? 0
+    setDragOverSlot(null)
     const raw = e.dataTransfer.getData('application/brain-item')
     if (!raw) return
     try {
       const item = JSON.parse(raw)
-      // 이미 같은 날 같은 시간에 같은 항목이 있으면 중복 방지
-      const exists = dayBlocks.some(b => b.sourceId === item.id && b.hour === hour)
-      if (exists) return
       const colorIdx = dayBlocks.length % BLOCK_COLORS.length
-      addBlock(hour, item.text, BLOCK_COLORS[colorIdx])
+      const newBlock = {
+        id: `tb${Date.now()}`,
+        text: item.text,
+        startSlot: slot,
+        durationSlots: 2,
+        status: item.persistedStatus === 'in-progress' ? 'in-progress' : 'todo',
+        color: BLOCK_COLORS[colorIdx],
+        sourceId: item.id,
+      }
+      // 타임박스에 추가
+      setTimeboxBlocks(prev => ({
+        ...prev,
+        [selectedDate]: [...(prev[selectedDate] || []).map(migrate), newBlock],
+      }))
+      // Brain Dump에서 제거
+      setBrainItems(prev => prev.filter(bi => bi.id !== item.id))
     } catch { /* ignore */ }
   }
 
-  function handleDragLeave() { setDragOverHour(null) }
-
+  // ── 렌더 ─────────────────────────────────────────────────
   return (
     <div className="panel h-full rounded-lg flex flex-col">
-      {/* Header */}
+      {/* 헤더 */}
       <div className="panel-header">
         <div className="flex items-center gap-1">
           <button className="icon-btn" onClick={() => setSelectedDay(d => Math.max(0, d - 1))}>
@@ -115,15 +187,12 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks }) {
             <ChevronRight size={12} />
           </button>
         </div>
-        <span className="text-[10px]" style={{ color: '#ffffff30' }}>
-          타임박스로 드래그 드롭
-        </span>
+        <span style={{ fontSize: 9, color: '#ffffff20' }}>⠿ 드래그 → 시간 배치 | 하단 핸들로 크기 조절</span>
       </div>
 
-      {/* Day tabs */}
+      {/* 요일 탭 */}
       <div className="flex-shrink-0 flex" style={{ borderBottom: '1px solid #ffffff0f' }}>
-        {DAYS_SHORT.map((d, i) => {
-          const date = dates[i]
+        {DAYS.map((d, i) => {
           const isToday = i === todayIdx
           const isSelected = i === selectedDay
           return (
@@ -131,132 +200,182 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks }) {
               key={d}
               onClick={() => setSelectedDay(i)}
               className="flex-1 flex flex-col items-center py-1.5 gap-0.5 transition-colors"
-              style={{
-                borderBottom: isSelected ? '2px solid #7c5cfc' : '2px solid transparent',
-                background: isSelected && !isToday ? '#ffffff04' : 'transparent',
-              }}
+              style={{ borderBottom: isSelected ? '2px solid #7c5cfc' : '2px solid transparent' }}
             >
-              <span className="text-[9px] font-medium" style={{ color: isSelected ? '#a78bfa' : '#ffffff20' }}>{d}</span>
-              <span
-                className="text-[11px] font-semibold flex items-center justify-center rounded-full"
-                style={{
-                  width: 18, height: 18,
-                  background: isToday ? '#f43f5e' : 'transparent',
-                  color: isToday ? 'white' : isSelected ? '#a78bfa' : '#ffffff25',
-                }}
-              >
-                {date.getDate()}
+              <span style={{ fontSize: 9, color: isSelected ? '#a78bfa' : '#ffffff20' }}>{d}</span>
+              <span style={{
+                fontSize: 11, fontWeight: 600, width: 18, height: 18,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: '50%',
+                background: isToday ? '#f43f5e' : 'transparent',
+                color: isToday ? '#fff' : isSelected ? '#a78bfa' : '#ffffff25',
+              }}>
+                {dates[i].getDate()}
               </span>
             </button>
           )
         })}
       </div>
 
-      {/* Time scroll */}
-      <div className="flex-1 overflow-y-auto">
-        {HOURS.map(hour => {
-          const blocksAtHour = dayBlocks.filter(b => b.hour === hour)
-          const isDragOver = dragOverHour === hour
+      {/* 시간 그리드 (스크롤) */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto"
+        style={{ position: 'relative' }}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onDragLeave={() => setDragOverSlot(null)}
+      >
+        <div style={{ height: TOTAL_SLOTS * SLOT_HEIGHT, position: 'relative' }}>
 
-          return (
-            <div
-              key={hour}
-              className="relative flex"
-              style={{
-                minHeight: blocksAtHour.length > 0 ? 'auto' : 38,
-                background: isDragOver ? '#7c5cfc10' : 'transparent',
-                borderBottom: '1px solid #ffffff06',
-                transition: 'background 0.1s',
-              }}
-              onDragOver={e => handleDragOver(e, hour)}
-              onDrop={e => handleDrop(e, hour)}
-              onDragLeave={handleDragLeave}
-            >
-              {/* Hour label */}
-              <div
-                className="flex-shrink-0 flex items-start pt-2 justify-end pr-2"
-                style={{ width: 32, color: '#ffffff20', fontSize: 10, fontFamily: 'monospace' }}
-              >
-                {hour}
+          {/* 시간 눈금 & 선 */}
+          {Array.from({ length: END_HOUR - START_HOUR }, (_, i) => {
+            const hour = START_HOUR + i
+            const top = i * 2 * SLOT_HEIGHT
+            return (
+              <div key={hour} style={{ position: 'absolute', top, left: 0, right: 0 }}>
+                <span style={{
+                  position: 'absolute', left: 4, top: 0,
+                  fontSize: 9, lineHeight: `${SLOT_HEIGHT}px`,
+                  color: '#ffffff18', fontFamily: 'monospace', userSelect: 'none',
+                }}>
+                  {hour}
+                </span>
+                {/* 정각선 */}
+                <div style={{ position: 'absolute', left: 34, right: 4, top: 0, height: 1, background: '#ffffff0d' }} />
+                {/* 30분선 */}
+                <div style={{ position: 'absolute', left: 34, right: 4, top: SLOT_HEIGHT, height: 1, background: '#ffffff05' }} />
               </div>
+            )
+          })}
 
-              {/* Block area */}
-              <div className="flex-1 py-1 pr-2 flex flex-col gap-1">
-                {blocksAtHour.map(block => {
-                  const st = STATUS[block.status] || STATUS.todo
-                  const isHov = hoveredBlock === block.id
-                  return (
-                    <div
-                      key={block.id}
-                      className="rounded-md px-2 py-1.5 flex items-center gap-2 group"
-                      style={{
-                        background: block.color + '18',
-                        borderLeft: `2px solid ${block.color}`,
-                      }}
-                      onMouseEnter={() => setHoveredBlock(block.id)}
-                      onMouseLeave={() => setHoveredBlock(null)}
-                    >
-                      {/* Status toggle */}
-                      <button
-                        onClick={() => cycleStatus(block.id)}
-                        className="flex-shrink-0 flex items-center gap-1 rounded px-1.5 py-0.5 transition-all duration-150"
-                        style={{ background: st.bg }}
-                        title="클릭으로 상태 변경"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: st.dot }} />
-                        <span className="text-[9px] font-semibold" style={{ color: st.color }}>
-                          {st.label}
-                        </span>
-                      </button>
+          {/* 드롭 미리보기 */}
+          {dragOverSlot !== null && (
+            <div style={{
+              position: 'absolute',
+              top: dragOverSlot * SLOT_HEIGHT,
+              left: 38, right: 4,
+              height: 2 * SLOT_HEIGHT - 2,
+              border: '1.5px dashed #7c5cfc60',
+              borderRadius: 6,
+              background: '#7c5cfc08',
+              pointerEvents: 'none',
+              zIndex: 5,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ fontSize: 9, color: '#7c5cfc80' }}>놓기</span>
+            </div>
+          )}
 
-                      {/* Text */}
-                      <span
-                        className="text-[11px] flex-1 min-w-0 truncate"
-                        style={{
-                          color: block.status === 'done' ? '#ffffff30' : '#ffffff70',
-                          textDecoration: block.status === 'done' ? 'line-through' : 'none',
-                        }}
-                      >
-                        {block.text}
-                      </span>
+          {/* 블록 */}
+          {dayBlocks.map(block => {
+            const isHov = hoveredBlock === block.id
+            const st = STATUS[block.status] || STATUS.todo
+            const liveSlots = resizeState?.blockId === block.id ? resizeState.durationSlots : block.durationSlots
+            const blockH = liveSlots * SLOT_HEIGHT - 3
+            const isDone = block.status === 'done'
 
-                      {/* Delete */}
-                      {isHov && (
-                        <button
-                          onClick={() => deleteBlock(block.id)}
-                          className="flex-shrink-0 icon-btn opacity-50 hover:opacity-100 hover:text-rose-400"
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      )}
+            return (
+              <div
+                key={block.id}
+                style={{
+                  position: 'absolute',
+                  top: block.startSlot * SLOT_HEIGHT + 1,
+                  left: 38, right: 4,
+                  height: blockH,
+                  background: block.color + '18',
+                  borderLeft: `3px solid ${block.color}`,
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                  zIndex: 10,
+                  boxShadow: isHov ? `0 0 0 1px ${block.color}35` : 'none',
+                  transition: 'box-shadow 0.1s',
+                }}
+                onMouseEnter={() => setHoveredBlock(block.id)}
+                onMouseLeave={() => setHoveredBlock(null)}
+              >
+                {/* 텍스트 + 시간 */}
+                <div style={{ padding: '4px 22px 4px 6px', paddingBottom: isHov ? 26 : 4 }}>
+                  <div style={{
+                    fontSize: 11, lineHeight: 1.3,
+                    color: isDone ? '#ffffff30' : '#ffffff75',
+                    textDecoration: isDone ? 'line-through' : 'none',
+                    wordBreak: 'break-word',
+                  }}>
+                    {block.text}
+                  </div>
+                  {blockH >= 36 && (
+                    <div style={{ fontSize: 9, color: '#ffffff20', marginTop: 2 }}>
+                      {slotToTime(block.startSlot)} – {slotToTime(block.startSlot + liveSlots)}
                     </div>
-                  )
-                })}
+                  )}
+                </div>
 
-                {/* Drop hint */}
-                {isDragOver && (
-                  <div
-                    className="rounded-md px-2 py-1.5 text-[10px] flex items-center gap-1.5"
-                    style={{ border: '1px dashed #7c5cfc50', color: '#a78bfa80', background: '#7c5cfc08' }}
-                  >
-                    <Plus size={10} /> 여기에 놓기
+                {/* 상태 선택 버튼 3개 (hover 시) */}
+                {isHov && (
+                  <div style={{
+                    position: 'absolute', bottom: 10, left: 4, right: 4,
+                    display: 'flex', gap: 2,
+                  }}>
+                    {STATUS_KEYS.map(key => {
+                      const s = STATUS[key]
+                      const active = block.status === key
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => changeStatus(block, key)}
+                          style={{
+                            flex: 1, padding: '2px 0', borderRadius: 4,
+                            fontSize: 9, fontWeight: 700, cursor: 'pointer',
+                            background: active ? s.bg : '#ffffff06',
+                            color: active ? s.color : '#ffffff25',
+                            border: active ? `1px solid ${s.accent}` : '1px solid transparent',
+                            transition: 'all 0.12s',
+                          }}
+                        >
+                          {s.label}
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
 
-                {/* Click to add */}
-                {blocksAtHour.length === 0 && !isDragOver && (
+                {/* 삭제 버튼 */}
+                {isHov && (
                   <button
-                    onClick={() => addBlock(hour)}
-                    className="w-full text-left text-[10px] py-1 px-1 rounded opacity-0 hover:opacity-100 transition-opacity"
-                    style={{ color: '#ffffff18' }}
+                    onClick={() => removeBlock(block.id)}
+                    style={{
+                      position: 'absolute', top: 3, right: 3,
+                      color: '#ffffff25', cursor: 'pointer', padding: 2, borderRadius: 3,
+                      lineHeight: 0,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#f43f5e'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#ffffff25'}
                   >
-                    + 블록 추가
+                    <X size={10} />
                   </button>
                 )}
+
+                {/* 리사이즈 핸들 */}
+                <div
+                  onMouseDown={e => handleResizeStart(e, block)}
+                  style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, height: 8,
+                    cursor: 's-resize',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: isHov ? block.color + '25' : 'transparent',
+                    borderTop: isHov ? `1px solid ${block.color}35` : '1px solid transparent',
+                    transition: 'all 0.1s',
+                  }}
+                >
+                  {isHov && (
+                    <div style={{ width: 20, height: 2, borderRadius: 1, background: block.color + '70' }} />
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
     </div>
   )

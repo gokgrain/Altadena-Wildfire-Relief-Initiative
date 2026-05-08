@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Check, GripVertical, Star, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Star, GripVertical, X } from 'lucide-react'
 
-// ── MustTodo 섹션 ─────────────────────────────────────────
+// ── Must Todo 섹션 (체크박스 없음, 하이라이트 강조) ───────
 function MustTodoSection({ mustTodos, setMustTodos }) {
   const [adding, setAdding] = useState(false)
   const [newText, setNewText] = useState('')
@@ -9,12 +9,6 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
 
   useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
 
-  function toggle(id) {
-    setMustTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
-  }
-  function remove(id) {
-    setMustTodos(prev => prev.filter(t => t.id !== id))
-  }
   function add() {
     const text = newText.trim()
     if (!text) { setAdding(false); return }
@@ -23,47 +17,53 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
     setAdding(false)
   }
 
+  function remove(id) {
+    setMustTodos(prev => prev.filter(t => t.id !== id))
+  }
+
   return (
-    <div className="flex-shrink-0 px-3 pt-2.5 pb-2">
-      {/* Header */}
+    <div className="flex-shrink-0 px-3 pt-2.5 pb-2" style={{ maxHeight: '38%', overflowY: 'auto' }}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: '#ffffff30' }}>
           Weekly Must Todo
         </span>
-        <button className="icon-btn" onClick={() => setAdding(true)}>
+        <button className="icon-btn" onClick={() => setAdding(true)} title="추가">
           <Plus size={12} />
         </button>
       </div>
 
-      {/* List */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {mustTodos.map(todo => (
-          <div key={todo.id} className="flex items-center gap-2 group">
-            <button
-              onClick={() => toggle(todo.id)}
-              className="check-box flex-shrink-0"
-              style={todo.done ? { background: '#7c5cfc', borderColor: '#7c5cfc' } : {}}
-            >
-              {todo.done && <Check size={9} color="white" strokeWidth={3} />}
-            </button>
+          <div
+            key={todo.id}
+            className="flex items-center gap-2 px-2 py-2 rounded-lg group relative"
+            style={{
+              background: 'linear-gradient(90deg, #7c5cfc14, #6366f108)',
+              borderLeft: '2px solid #7c5cfc55',
+            }}
+          >
+            <Star size={10} style={{ color: '#a78bfa', fill: '#a78bfa', flexShrink: 0 }} />
             <span
-              className="text-xs flex-1 truncate"
-              style={{ color: todo.done ? '#ffffff30' : '#ffffff70', textDecoration: todo.done ? 'line-through' : 'none' }}
+              className="flex-1 truncate font-semibold"
+              style={{ fontSize: 12, color: '#c4b5fd', letterSpacing: '0.01em' }}
             >
               {todo.text}
             </span>
             <button
               onClick={() => remove(todo.id)}
-              className="icon-btn opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-rose-400"
+              className="icon-btn opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-rose-400 flex-shrink-0"
             >
-              <Trash2 size={10} />
+              <X size={10} />
             </button>
           </div>
         ))}
 
         {adding && (
-          <div className="flex items-center gap-2">
-            <div className="check-box flex-shrink-0 opacity-20" />
+          <div
+            className="flex items-center gap-2 px-2 py-2 rounded-lg"
+            style={{ background: '#7c5cfc0a', borderLeft: '2px solid #7c5cfc30' }}
+          >
+            <Star size={10} style={{ color: '#7c5cfc50', flexShrink: 0 }} />
             <input
               ref={inputRef}
               value={newText}
@@ -71,15 +71,15 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
               onKeyDown={e => { if (e.key === 'Enter') add(); if (e.key === 'Escape') { setAdding(false); setNewText('') } }}
               onBlur={add}
               placeholder="할 일 입력..."
-              className="flex-1 bg-transparent text-xs outline-none"
-              style={{ color: '#ffffff70' }}
+              className="flex-1 bg-transparent outline-none font-semibold"
+              style={{ fontSize: 12, color: '#c4b5fd' }}
             />
           </div>
         )}
 
         {mustTodos.length === 0 && !adding && (
-          <p className="text-[10px] py-1" style={{ color: '#ffffff18' }}>
-            Brain Dump에서 [must]를 눌러 추가하세요
+          <p className="text-[10px] py-1 px-1" style={{ color: '#ffffff15' }}>
+            Brain Dump에서 ⭐ must를 눌러 추가하세요
           </p>
         )}
       </div>
@@ -87,13 +87,15 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
   )
 }
 
-// ── BrainDump item ────────────────────────────────────────
+// ── Brain Dump 개별 항목 ─────────────────────────────────
 function BrainItem({ item, onMust, onDelete, onDragStart }) {
   const [hovered, setHovered] = useState(false)
 
+  const hasPersisted = item.persistedStatus === 'in-progress'
+
   return (
     <div
-      className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100 group cursor-default"
+      className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
       style={{ background: hovered ? '#ffffff06' : 'transparent' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -102,7 +104,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
       <div
         draggable
         onDragStart={onDragStart}
-        className="flex-shrink-0 cursor-grab active:cursor-grabbing transition-colors"
+        className="flex-shrink-0 transition-colors cursor-grab active:cursor-grabbing"
         style={{ color: hovered ? '#ffffff30' : 'transparent' }}
         title="타임박스로 드래그"
       >
@@ -110,20 +112,26 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
       </div>
 
       {/* Bullet */}
-      <div
-        className="w-1 h-1 rounded-full flex-shrink-0"
-        style={{ background: '#ffffff30' }}
-      />
+      <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#ffffff25' }} />
 
       {/* Text */}
-      <span className="text-xs flex-1 min-w-0 truncate" style={{ color: '#ffffff75' }}>
+      <span className="text-xs flex-1 min-w-0 truncate" style={{ color: '#ffffff70' }}>
         {item.text}
       </span>
 
-      {/* Actions (hover) */}
+      {/* 진행중 배지 */}
+      {hasPersisted && (
+        <span
+          className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
+          style={{ background: '#f59e0b18', color: '#f59e0b', border: '1px solid #f59e0b30' }}
+        >
+          진행중
+        </span>
+      )}
+
+      {/* Hover 액션 */}
       {hovered && (
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Must button */}
           <button
             onClick={onMust}
             className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
@@ -137,8 +145,6 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
             <Star size={9} fill={item.isMust ? '#a78bfa' : 'none'} />
             must
           </button>
-
-          {/* Delete */}
           <button
             onClick={onDelete}
             className="icon-btn opacity-50 hover:opacity-100 hover:text-rose-400"
@@ -151,7 +157,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
   )
 }
 
-// ── Main Component ────────────────────────────────────────
+// ── 메인 컴포넌트 ─────────────────────────────────────────
 export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMustTodos }) {
   const [inputText, setInputText] = useState('')
   const inputRef = useRef(null)
@@ -159,26 +165,24 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
   function addItem() {
     const text = inputText.trim()
     if (!text) return
-    setBrainItems(prev => [{ id: `bd${Date.now()}`, text, isMust: false, createdAt: new Date().toISOString() }, ...prev])
+    setBrainItems(prev => [{
+      id: `bd${Date.now()}`,
+      text,
+      isMust: false,
+      persistedStatus: 'none',
+      createdAt: new Date().toISOString(),
+    }, ...prev])
     setInputText('')
   }
 
   function toggleMust(item) {
     setBrainItems(prev => prev.map(i => i.id === item.id ? { ...i, isMust: !i.isMust } : i))
-
     if (!item.isMust) {
-      // Must Todo에 복사 (중복 방지)
       const exists = mustTodos.some(t => t.sourceId === item.id)
       if (!exists) {
-        setMustTodos(prev => [...prev, {
-          id: `mt${Date.now()}`,
-          text: item.text,
-          done: false,
-          sourceId: item.id,
-        }])
+        setMustTodos(prev => [...prev, { id: `mt${Date.now()}`, text: item.text, done: false, sourceId: item.id }])
       }
     } else {
-      // must 해제 시 Must Todo에서도 제거
       setMustTodos(prev => prev.filter(t => t.sourceId !== item.id))
     }
   }
@@ -189,13 +193,17 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
   }
 
   function handleDragStart(e, item) {
-    e.dataTransfer.setData('application/brain-item', JSON.stringify({ id: item.id, text: item.text }))
-    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('application/brain-item', JSON.stringify({
+      id: item.id,
+      text: item.text,
+      persistedStatus: item.persistedStatus || 'none',
+    }))
+    e.dataTransfer.effectAllowed = 'move'
   }
 
   return (
     <div className="panel h-full rounded-lg flex flex-col">
-      {/* Must Todo 섹션 */}
+      {/* Must Todo */}
       <MustTodoSection mustTodos={mustTodos} setMustTodos={setMustTodos} />
 
       {/* 구분선 */}
@@ -212,20 +220,14 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
             {brainItems.length}
           </span>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="text-[9px]" style={{ color: '#ffffff20' }}>
-            드래그 → 타임박스
-          </span>
-        </div>
+        <span className="text-[9px]" style={{ color: '#ffffff15' }}>⠿ 드래그 → 타임박스</span>
       </div>
 
-      {/* Item list */}
+      {/* 항목 리스트 */}
       <div className="flex-1 overflow-y-auto px-1 py-1">
         {brainItems.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-2 pb-8">
-            <p className="text-[11px]" style={{ color: '#ffffff18' }}>
-              머릿속 할 일을 모두 쏟아내세요
-            </p>
+          <div className="flex items-center justify-center h-full pb-8">
+            <p className="text-[11px]" style={{ color: '#ffffff15' }}>머릿속 할 일을 모두 쏟아내세요</p>
           </div>
         )}
         {brainItems.map(item => (
@@ -239,7 +241,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
         ))}
       </div>
 
-      {/* Input bar */}
+      {/* 입력창 */}
       <div
         className="flex-shrink-0 flex items-center gap-2 px-3 py-2.5"
         style={{ borderTop: '1px solid #ffffff08' }}
