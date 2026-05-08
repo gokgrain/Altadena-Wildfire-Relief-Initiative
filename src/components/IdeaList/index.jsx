@@ -3,7 +3,7 @@ import { Plus, X, Trash2, FileText, ImagePlus } from 'lucide-react'
 
 const TYPES = ['영화', '음악', '드라마', '책', '만화']
 const ALL_TYPES = ['전체', ...TYPES]
-const PRESET_ROLES = ['감독', '작가', '배우', '음악', '원작', '기타']
+const PRESET_ROLES = ['감독', '작가', '배우', '가수', 'PD', '기타']
 
 const TYPE_COLORS = {
   '영화': '#ff3b30',
