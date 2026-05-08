@@ -49,7 +49,7 @@ function getOpacity(dist) {
 function CoverCard({ idea, position, onClick, isFlipped }) {
   const abs = Math.abs(position)
   const scale = getScale(abs)
-  const translateX = position * 136
+  const translateX = position * 112
   const rotateY = position * -34
   const zIndex = Math.max(0, Math.round(10 - abs))
   const opacity = getOpacity(abs)
@@ -63,9 +63,9 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
       onClick={onClick}
       className="absolute cursor-pointer select-none"
       style={{
-        width: 240, height: 240,
+        width: 160, height: 240,
         left: '50%', top: '50%',
-        marginLeft: -120, marginTop: -120,
+        marginLeft: -80, marginTop: -120,
         transform: `translateX(${translateX}px) scale(${scale}) rotateY(${rotateY}deg)`,
         zIndex, opacity,
         transition: 'none',
@@ -96,7 +96,7 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
           </div>
         ) : (
           <div style={{ width: '100%', height: '100%', background: `linear-gradient(145deg, ${cs.bg} 0%, ${cs.accent}28 100%)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle at 35% 30%, ${cs.accent}90, ${cs.accent}18)` }} />
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: `radial-gradient(circle at 35% 30%, ${cs.accent}90, ${cs.accent}18)` }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.80)', textAlign: 'center', lineHeight: 1.35 }}>{idea.title}</span>
             <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: cs.accent + '35', color: cs.accent }}>{idea.type}</span>
           </div>
