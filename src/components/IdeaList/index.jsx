@@ -3,6 +3,7 @@ import { Plus, X, Trash2, FileText, ImagePlus } from 'lucide-react'
 
 const TYPES = ['영화', '음악', '드라마', '책', '만화']
 const ALL_TYPES = ['전체', ...TYPES]
+const PRESET_ROLES = ['감독', '작가', '배우', '음악', '원작', '기타']
 
 const TYPE_COLORS = {
   '영화': '#ff3b30',
@@ -38,10 +39,152 @@ function resizeImage(file) {
   })
 }
 
+// 구버전 string 포맷 호환
+function normalizeCreators(creators) {
+  if (!creators) return []
+  if (Array.isArray(creators)) return creators
+  return []
+}
+
+// ── 제작진 필드 컴포넌트 ──────────────────────────────────
+function CreatorsField({ value, onChange }) {
+  const creators = normalizeCreators(value)
+  const [selectedRole, setSelectedRole] = useState('감독')
+  const [customRole, setCustomRole] = useState('')
+  const [nameInput, setNameInput] = useState('')
+
+  const isCustom = selectedRole === '기타'
+  const finalRole = isCustom ? customRole.trim() : selectedRole
+
+  function add() {
+    const n = nameInput.trim()
+    if (!n || !finalRole) return
+    onChange([...creators, { name: n, role: finalRole }])
+    setNameInput('')
+    if (isCustom) setCustomRole('')
+  }
+
+  function remove(idx) {
+    onChange(creators.filter((_, i) => i !== idx))
+  }
+
+  // 역할별 그룹 (삽입 순서 유지)
+  const groups = creators.reduce((acc, c, idx) => {
+    if (!acc[c.role]) acc[c.role] = []
+    acc[c.role].push({ ...c, _idx: idx })
+    return acc
+  }, {})
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* 역할 선택 칩 */}
+      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        {PRESET_ROLES.map(r => (
+          <button
+            key={r}
+            onClick={() => setSelectedRole(r)}
+            style={{
+              padding: '4px 11px', borderRadius: 20, fontSize: 10, fontWeight: 600,
+              border: 'none', cursor: 'pointer', transition: 'all 0.12s',
+              background: selectedRole === r ? '#5856d618' : '#f5f5f7',
+              color: selectedRole === r ? '#5856d6' : '#aeaeb2',
+              outline: selectedRole === r ? '1.5px solid #5856d630' : '1.5px solid transparent',
+            }}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+
+      {/* 기타 선택 시 역할명 직접 입력 */}
+      {isCustom && (
+        <input
+          value={customRole}
+          onChange={e => setCustomRole(e.target.value)}
+          placeholder="역할명 입력 (예: 촬영감독)"
+          style={{
+            fontSize: 12, color: '#1d1d1f', padding: '7px 10px',
+            borderRadius: 7, border: '1px solid #0000000f',
+            background: '#f5f5f7', outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+      )}
+
+      {/* 이름 입력 + 추가 버튼 */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          value={nameInput}
+          onChange={e => setNameInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') add() }}
+          placeholder={`${finalRole || '역할 선택 후'} 이름 입력 후 Enter`}
+          style={{
+            flex: 1, fontSize: 12, color: '#1d1d1f', padding: '7px 10px',
+            borderRadius: 7, border: '1px solid #0000000f',
+            background: '#f5f5f7', outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+        <button
+          onClick={add}
+          style={{
+            width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: nameInput.trim() && finalRole ? '#5856d6' : '#f5f5f7',
+            color: nameInput.trim() && finalRole ? '#fff' : '#aeaeb2',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.12s', flexShrink: 0,
+          }}
+        >
+          <Plus size={13} />
+        </button>
+      </div>
+
+      {/* 역할별 그룹 칩 */}
+      {Object.keys(groups).length > 0 && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 7,
+          padding: '10px 12px', borderRadius: 10, background: '#f5f5f7',
+        }}>
+          {Object.entries(groups).map(([role, members]) => (
+            <div key={role} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: '#aeaeb2',
+                width: 30, paddingTop: 4, flexShrink: 0, letterSpacing: '0.05em',
+              }}>
+                {role}
+              </span>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {members.map(c => (
+                  <span
+                    key={c._idx}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '3px 8px 3px 10px', borderRadius: 99,
+                      fontSize: 11, fontWeight: 500, background: '#ffffff',
+                      color: '#1d1d1f', border: '1px solid #00000008',
+                    }}
+                  >
+                    {c.name}
+                    <button
+                      onClick={() => remove(c._idx)}
+                      style={{ lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#c7c7cc', padding: 0 }}
+                    >
+                      <X size={9} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── 라벨 + 입력 래퍼 ─────────────────────────────────────
 function Field({ label, children }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
         {label}
       </span>
@@ -57,7 +200,7 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
   const [form, setForm] = useState({
     title:    idea.title    || '',
     type:     idea.type     || '영화',
-    creators: idea.creators || '',
+    creators: normalizeCreators(idea.creators),
     image:    idea.image    || null,
     oneliner: idea.oneliner || '',
     memo:     idea.memo     || '',
@@ -96,11 +239,9 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
       <div
         style={{
           width: 500, maxWidth: '94vw', maxHeight: '90vh',
-          background: '#ffffff',
-          borderRadius: 16,
+          background: '#ffffff', borderRadius: 16,
           boxShadow: '0 24px 64px rgba(0,0,0,0.14)',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -118,37 +259,24 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
           </button>
         </div>
 
-        {/* 바디 (스크롤 가능) */}
-        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1 }}>
+        {/* 바디 */}
+        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', flex: 1 }}>
 
           {/* 이미지 첨부 */}
           <Field label="이미지">
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageFile} />
             {form.image ? (
               <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
-                <img
-                  src={form.image}
-                  alt="cover"
-                  style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }}
-                />
+                <img src={form.image} alt="cover" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
                 <button
                   onClick={() => setForm(f => ({ ...f, image: null }))}
-                  style={{
-                    position: 'absolute', top: 8, right: 8,
-                    background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%',
-                    width: 24, height: 24, cursor: 'pointer', color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
+                  style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <X size={12} />
                 </button>
                 <button
                   onClick={() => fileRef.current?.click()}
-                  style={{
-                    position: 'absolute', bottom: 8, right: 8,
-                    background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: 6,
-                    padding: '4px 10px', cursor: 'pointer', color: '#fff', fontSize: 10, fontWeight: 600,
-                  }}
+                  style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: '#fff', fontSize: 10, fontWeight: 600 }}
                 >
                   교체
                 </button>
@@ -156,12 +284,7 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
             ) : (
               <button
                 onClick={() => fileRef.current?.click()}
-                style={{
-                  height: 80, width: '100%', borderRadius: 10, border: '1.5px dashed #c7c7cc',
-                  background: '#f5f5f7', cursor: 'pointer',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  color: '#aeaeb2', transition: 'all 0.15s',
-                }}
+                style={{ height: 80, width: '100%', borderRadius: 10, border: '1.5px dashed #c7c7cc', background: '#f5f5f7', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#aeaeb2', transition: 'all 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#5856d6'; e.currentTarget.style.color = '#5856d6' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#c7c7cc'; e.currentTarget.style.color = '#aeaeb2' }}
               >
@@ -202,11 +325,9 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
 
           {/* 제작진 */}
           <Field label="제작진">
-            <input
+            <CreatorsField
               value={form.creators}
-              onChange={e => setForm(f => ({ ...f, creators: e.target.value }))}
-              placeholder="감독, 작가, 배우 등 (쉼표로 구분)"
-              style={inputStyle}
+              onChange={creators => setForm(f => ({ ...f, creators }))}
             />
           </Field>
 
@@ -233,24 +354,14 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
         </div>
 
         {/* 푸터 */}
-        <div style={{
-          padding: '12px 20px 16px', flexShrink: 0,
-          borderTop: '1px solid #0000000f',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
+        <div style={{ padding: '12px 20px 16px', flexShrink: 0, borderTop: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {!isNew ? (
-            <button onClick={onDelete}
-              style={{ fontSize: 12, color: '#ff3b30', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <button onClick={onDelete} style={{ fontSize: 12, color: '#ff3b30', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
               <Trash2 size={13} /> 삭제
             </button>
           ) : <div />}
           <button onClick={handleSave}
-            style={{
-              padding: '7px 22px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', border: 'none', transition: 'all 0.15s',
-              background: form.title.trim() ? '#5856d6' : '#00000010',
-              color: form.title.trim() ? '#ffffff' : '#aeaeb2',
-            }}>
+            style={{ padding: '7px 22px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', transition: 'all 0.15s', background: form.title.trim() ? '#5856d6' : '#00000010', color: form.title.trim() ? '#ffffff' : '#aeaeb2' }}>
             저장
           </button>
         </div>
@@ -287,13 +398,11 @@ export default function IdeaList({ ideas, setIdeas }) {
   return (
     <>
       <div className="panel h-full rounded-lg flex flex-col">
-        {/* 헤더 */}
         <div className="panel-header">
           <span className="panel-title">Idea List</span>
           <button className="icon-btn" onClick={openNew}><Plus size={13} /></button>
         </div>
 
-        {/* 종류 필터 탭 */}
         <div className="flex-shrink-0 flex items-center gap-1 px-3 py-2 overflow-x-auto" style={{ borderBottom: '1px solid #0000000f' }}>
           {ALL_TYPES.map(type => (
             <button key={type} onClick={() => setActiveType(type)}
@@ -304,7 +413,6 @@ export default function IdeaList({ ideas, setIdeas }) {
           ))}
         </div>
 
-        {/* 컬럼 헤더 */}
         <div className="flex-shrink-0 grid px-3 py-2 text-[9px] font-semibold tracking-widest uppercase"
           style={{ gridTemplateColumns: '1fr 70px 50px', borderBottom: '1px solid #00000008', color: '#aeaeb2' }}>
           <span>제목</span>
@@ -312,7 +420,6 @@ export default function IdeaList({ ideas, setIdeas }) {
           <span className="text-right">날짜</span>
         </div>
 
-        {/* 목록 */}
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 && (
             <div className="flex items-center justify-center h-full pb-8">
@@ -320,42 +427,48 @@ export default function IdeaList({ ideas, setIdeas }) {
             </div>
           )}
 
-          {filtered.map((idea, idx) => (
-            <div key={idea.id}>
-              <div
-                className="grid items-center px-3 py-2.5 cursor-pointer transition-colors duration-100"
-                style={{ gridTemplateColumns: '1fr 70px 50px', background: hovered === idea.id ? '#00000005' : 'transparent' }}
-                onClick={() => openEdit(idea)}
-                onMouseEnter={() => setHovered(idea.id)}
-                onMouseLeave={() => setHovered(null)}
-              >
-                {/* 썸네일 + 제목 */}
-                <div className="flex items-center gap-2 min-w-0">
-                  {idea.image ? (
-                    <img src={idea.image} alt="" style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
-                  ) : (
-                    <FileText size={11} style={{ color: '#c7c7cc', flexShrink: 0 }} />
-                  )}
-                  <div className="min-w-0">
-                    <span className="text-[11px] truncate block" style={{ color: '#1d1d1f' }}>{idea.title}</span>
-                    {idea.creators && (
-                      <span className="text-[9px] truncate block" style={{ color: '#aeaeb2' }}>{idea.creators}</span>
+          {filtered.map((idea, idx) => {
+            const creators = normalizeCreators(idea.creators)
+            const creatorSummary = creators.length > 0
+              ? creators.slice(0, 2).map(c => c.name).join(' · ') + (creators.length > 2 ? ` 외 ${creators.length - 2}명` : '')
+              : null
+
+            return (
+              <div key={idea.id}>
+                <div
+                  className="grid items-center px-3 py-2.5 cursor-pointer transition-colors duration-100"
+                  style={{ gridTemplateColumns: '1fr 70px 50px', background: hovered === idea.id ? '#00000005' : 'transparent' }}
+                  onClick={() => openEdit(idea)}
+                  onMouseEnter={() => setHovered(idea.id)}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {idea.image ? (
+                      <img src={idea.image} alt="" style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+                    ) : (
+                      <FileText size={11} style={{ color: '#c7c7cc', flexShrink: 0 }} />
                     )}
+                    <div className="min-w-0">
+                      <span className="text-[11px] truncate block" style={{ color: '#1d1d1f' }}>{idea.title}</span>
+                      {creatorSummary && (
+                        <span className="text-[9px] truncate block" style={{ color: '#aeaeb2' }}>{creatorSummary}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold"
-                    style={{ background: (TYPE_COLORS[idea.type] || '#aeaeb2') + '18', color: TYPE_COLORS[idea.type] || '#aeaeb2' }}>
-                    {idea.type}
+                  <div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold"
+                      style={{ background: (TYPE_COLORS[idea.type] || '#aeaeb2') + '18', color: TYPE_COLORS[idea.type] || '#aeaeb2' }}>
+                      {idea.type}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-right" style={{ color: '#aeaeb2' }}>
+                    {formatDate(idea.createdAt)}
                   </span>
                 </div>
-                <span className="text-[10px] text-right" style={{ color: '#aeaeb2' }}>
-                  {formatDate(idea.createdAt)}
-                </span>
+                {idx < filtered.length - 1 && <div style={{ height: 1, background: '#00000008', margin: '0 12px' }} />}
               </div>
-              {idx < filtered.length - 1 && <div style={{ height: 1, background: '#00000008', margin: '0 12px' }} />}
-            </div>
-          ))}
+            )
+          })}
 
           <button className="flex items-center gap-2 px-3 py-2.5 w-full transition-colors"
             style={{ color: '#c7c7cc' }} onClick={openNew}
