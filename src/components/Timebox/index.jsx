@@ -93,10 +93,28 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
   }
 
   function removeBlock(id) {
+    const block = dayBlocks.find(b => b.id === id)
+
     setTimeboxBlocks(prev => ({
       ...prev,
       [selectedDate]: (prev[selectedDate] || []).filter(b => b.id !== id),
     }))
+
+    if (!block) return
+
+    // Timebox에서 삭제 시 Brain Dump로 초기화 복귀
+    // 기존 재생성 항목(sourceBlockId === id)이 있으면 교체, 없으면 맨 앞에 추가
+    setBrainItems(prev => {
+      const filtered = prev.filter(bi => bi.sourceBlockId !== id)
+      return [{
+        id: `bd${Date.now()}`,
+        text: block.text,
+        isMust: block.isMust || false,
+        persistedStatus: 'none',
+        mustSourceId: block.isMust ? block.sourceId : undefined,
+        createdAt: new Date().toISOString(),
+      }, ...filtered]
+    })
   }
 
   // ── 상태 변경 ────────────────────────────────────────────
