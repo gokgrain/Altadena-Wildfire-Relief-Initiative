@@ -10,7 +10,7 @@ const DAYS = ['월', '화', '수', '목', '금', '토', '일']
 const BLOCK_COLORS = ['#7c5cfc', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#6366f1']
 
 const STATUS = {
-  todo:          { label: '미완료', color: '#ffffff40', bg: '#ffffff08', accent: '#ffffff20' },
+  todo:          { label: '미완료', color: '#f43f5e',  bg: '#f43f5e14', accent: '#f43f5e50' },
   'in-progress': { label: '진행중',  color: '#f59e0b',  bg: '#f59e0b14', accent: '#f59e0b50' },
   done:          { label: '완료',    color: '#10b981',  bg: '#10b98114', accent: '#10b98150' },
 }
@@ -47,7 +47,7 @@ function migrate(block) {
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems }) {
+export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems, setMustTodos }) {
   const dates = getWeekDates()
   const today = new Date()
   const todayIdx = (today.getDay() + 6) % 7
@@ -82,9 +82,39 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     }))
   }
 
-  // ── 상태 변경 (블록은 Timebox에 항상 유지) ───────────────
+  // ── 상태 변경 ────────────────────────────────────────────
+  // 블록은 Timebox에 항상 영구보존.
+  // 완료 → Brain Dump + Must Todo에서 제거
+  // 진행중/미완료 → Brain Dump에 재생성(또는 업데이트)
   function changeStatus(block, newStatus) {
     saveBlock({ ...block, status: newStatus })
+
+    if (newStatus === 'done') {
+      // Brain Dump에서 이 블록에서 파생된 항목 제거
+      setBrainItems(prev => prev.filter(bi => bi.sourceBlockId !== block.id))
+      // Must Todo에서도 제거 (원본 Brain Dump 아이템이 must였을 경우)
+      setMustTodos(prev => prev.filter(t => t.sourceId !== block.sourceId))
+      return
+    }
+
+    // 진행중 / 미완료 → Brain Dump에 재생성 또는 업데이트
+    const persistedStatus = newStatus === 'in-progress' ? 'in-progress' : 'none'
+    setBrainItems(prev => {
+      const existingIdx = prev.findIndex(bi => bi.sourceBlockId === block.id)
+      if (existingIdx >= 0) {
+        return prev.map(bi =>
+          bi.sourceBlockId === block.id ? { ...bi, persistedStatus } : bi
+        )
+      }
+      return [{
+        id: `bd${Date.now()}`,
+        text: block.text,
+        isMust: false,
+        persistedStatus,
+        sourceBlockId: block.id,
+        createdAt: new Date().toISOString(),
+      }, ...prev]
+    })
   }
 
   // ── 리사이즈 (30분 단위) ─────────────────────────────────
