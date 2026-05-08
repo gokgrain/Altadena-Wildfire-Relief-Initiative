@@ -37,7 +37,6 @@ function getWeekDates() {
 }
 function dateKey(d) { return d.toISOString().slice(0, 10) }
 
-// 구형 데이터(hour 기반) → 신형(startSlot 기반) 마이그레이션
 function migrate(block) {
   if (block.startSlot !== undefined) return block
   return {
@@ -56,7 +55,9 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
   const [selectedDay, setSelectedDay] = useState(todayIdx)
   const [hoveredBlock, setHoveredBlock] = useState(null)
   const [dragOverSlot, setDragOverSlot] = useState(null)
-  const [resizeState, setResizeState] = useState(null) // { blockId, durationSlots }
+  const [resizeState, setResizeState] = useState(null)
+  const [movingBlockId, setMovingBlockId] = useState(null)
+  const movingOffsetSlot = useRef(0)
   const containerRef = useRef(null)
 
   const selectedDate = dateKey(dates[selectedDay])
@@ -81,35 +82,9 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     }))
   }
 
-  // ── 상태 변경 ────────────────────────────────────────────
-  // '완료' → Timebox에 유지
-  // '진행중'/'미완료' → Timebox에서 제거 후 BrainDump로 복귀
+  // ── 상태 변경 (블록은 Timebox에 항상 유지) ───────────────
   function changeStatus(block, newStatus) {
-    if (newStatus === 'done') {
-      saveBlock({ ...block, status: 'done' })
-      return
-    }
-    // 타임박스에서 제거
-    removeBlock(block.id)
-    // Brain Dump에 복귀 (persistedStatus 포함)
-    setBrainItems(prev => {
-      const alreadyExists = prev.some(i => i.sourceBlockId === block.id)
-      if (alreadyExists) {
-        return prev.map(i =>
-          i.sourceBlockId === block.id
-            ? { ...i, persistedStatus: newStatus === 'in-progress' ? 'in-progress' : 'none' }
-            : i
-        )
-      }
-      return [{
-        id: `bd${Date.now()}`,
-        text: block.text,
-        isMust: false,
-        persistedStatus: newStatus === 'in-progress' ? 'in-progress' : 'none',
-        sourceBlockId: block.id,
-        createdAt: new Date().toISOString(),
-      }, ...prev]
-    })
+    saveBlock({ ...block, status: newStatus })
   }
 
   // ── 리사이즈 (30분 단위) ─────────────────────────────────
@@ -137,19 +112,47 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     document.addEventListener('mouseup', onMouseUp)
   }
 
-  // ── 드래그 & 드롭 ────────────────────────────────────────
+  // ── 드래그 오버 ──────────────────────────────────────────
   function handleDragOver(e) {
     e.preventDefault()
     if (!containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
     const y = e.clientY - rect.top + containerRef.current.scrollTop
-    setDragOverSlot(Math.max(0, Math.min(TOTAL_SLOTS - 2, Math.floor(y / SLOT_HEIGHT))))
+    setDragOverSlot(Math.max(0, Math.min(TOTAL_SLOTS - 1, Math.floor(y / SLOT_HEIGHT))))
   }
 
+  // ── 타임박스 내 블록 이동 드래그 ────────────────────────
+  function handleBlockDragStart(e, block) {
+    e.stopPropagation()
+    setMovingBlockId(block.id)
+    const rect = e.currentTarget.getBoundingClientRect()
+    movingOffsetSlot.current = Math.floor((e.clientY - rect.top) / SLOT_HEIGHT)
+    e.dataTransfer.setData('application/timebox-block', block.id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  function handleBlockDragEnd() {
+    setMovingBlockId(null)
+    movingOffsetSlot.current = 0
+  }
+
+  // ── 드롭 처리 ────────────────────────────────────────────
   function handleDrop(e) {
     e.preventDefault()
     const slot = dragOverSlot ?? 0
     setDragOverSlot(null)
+
+    // 1) 타임박스 내 블록 이동
+    const blockId = e.dataTransfer.getData('application/timebox-block')
+    if (blockId) {
+      const newStartSlot = Math.max(0, Math.min(TOTAL_SLOTS - 1, slot - movingOffsetSlot.current))
+      const block = dayBlocks.find(b => b.id === blockId)
+      if (block) saveBlock({ ...block, startSlot: newStartSlot })
+      setMovingBlockId(null)
+      return
+    }
+
+    // 2) Brain Dump → Timebox 드롭
     const raw = e.dataTransfer.getData('application/brain-item')
     if (!raw) return
     try {
@@ -164,7 +167,6 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         color: BLOCK_COLORS[colorIdx],
         sourceId: item.id,
       }
-      // 타임박스에 추가
       setTimeboxBlocks(prev => ({
         ...prev,
         [selectedDate]: [...(prev[selectedDate] || []).map(migrate), newBlock],
@@ -187,7 +189,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
             <ChevronRight size={12} />
           </button>
         </div>
-        <span style={{ fontSize: 9, color: '#ffffff20' }}>⠿ 드래그 → 시간 배치 | 하단 핸들로 크기 조절</span>
+        <span style={{ fontSize: 9, color: '#ffffff20' }}>⠿ 드래그 → 배치·이동 | 하단 핸들로 크기 조절</span>
       </div>
 
       {/* 요일 탭 */}
@@ -241,9 +243,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                 }}>
                   {hour}
                 </span>
-                {/* 정각선 */}
                 <div style={{ position: 'absolute', left: 34, right: 4, top: 0, height: 1, background: '#ffffff0d' }} />
-                {/* 30분선 */}
                 <div style={{ position: 'absolute', left: 34, right: 4, top: SLOT_HEIGHT, height: 1, background: '#ffffff05' }} />
               </div>
             )
@@ -270,6 +270,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
           {/* 블록 */}
           {dayBlocks.map(block => {
             const isHov = hoveredBlock === block.id
+            const isMoving = movingBlockId === block.id
             const st = STATUS[block.status] || STATUS.todo
             const liveSlots = resizeState?.blockId === block.id ? resizeState.durationSlots : block.durationSlots
             const blockH = liveSlots * SLOT_HEIGHT - 3
@@ -278,6 +279,9 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
             return (
               <div
                 key={block.id}
+                draggable
+                onDragStart={e => handleBlockDragStart(e, block)}
+                onDragEnd={handleBlockDragEnd}
                 style={{
                   position: 'absolute',
                   top: block.startSlot * SLOT_HEIGHT + 1,
@@ -287,9 +291,11 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                   borderLeft: `3px solid ${block.color}`,
                   borderRadius: 6,
                   overflow: 'hidden',
-                  zIndex: 10,
+                  zIndex: isMoving ? 3 : 10,
+                  opacity: isMoving ? 0.35 : 1,
                   boxShadow: isHov ? `0 0 0 1px ${block.color}35` : 'none',
-                  transition: 'box-shadow 0.1s',
+                  cursor: 'grab',
+                  transition: 'box-shadow 0.1s, opacity 0.1s',
                 }}
                 onMouseEnter={() => setHoveredBlock(block.id)}
                 onMouseLeave={() => setHoveredBlock(null)}
@@ -323,7 +329,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                       return (
                         <button
                           key={key}
-                          onClick={() => changeStatus(block, key)}
+                          onClick={e => { e.stopPropagation(); changeStatus(block, key) }}
                           style={{
                             flex: 1, padding: '2px 0', borderRadius: 4,
                             fontSize: 9, fontWeight: 700, cursor: 'pointer',
@@ -343,7 +349,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                 {/* 삭제 버튼 */}
                 {isHov && (
                   <button
-                    onClick={() => removeBlock(block.id)}
+                    onClick={e => { e.stopPropagation(); removeBlock(block.id) }}
                     style={{
                       position: 'absolute', top: 3, right: 3,
                       color: '#ffffff25', cursor: 'pointer', padding: 2, borderRadius: 3,
@@ -356,9 +362,11 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                   </button>
                 )}
 
-                {/* 리사이즈 핸들 */}
+                {/* 리사이즈 핸들 (블록 드래그와 분리) */}
                 <div
+                  draggable={false}
                   onMouseDown={e => handleResizeStart(e, block)}
+                  onDragStart={e => e.preventDefault()}
                   style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0, height: 8,
                     cursor: 's-resize',

@@ -38,6 +38,7 @@ export default function App() {
           <Timebox
             timeboxBlocks={timeboxBlocks}
             setTimeboxBlocks={setTimeboxBlocks}
+            setBrainItems={setBrainItems}
           />
         </div>
       </div>
