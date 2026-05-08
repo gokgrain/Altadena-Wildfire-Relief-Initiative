@@ -95,18 +95,20 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
 
   return (
     <div
+      draggable
+      onDragStart={onDragStart}
       className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
-      style={{ background: hovered ? '#ffffff06' : 'transparent' }}
+      style={{
+        background: hovered ? '#ffffff06' : 'transparent',
+        cursor: 'grab',
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Drag handle */}
+      {/* Drag handle indicator */}
       <div
-        draggable
-        onDragStart={onDragStart}
-        className="flex-shrink-0 transition-colors cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 transition-colors"
         style={{ color: hovered ? '#ffffff30' : 'transparent' }}
-        title="타임박스로 드래그"
       >
         <GripVertical size={13} />
       </div>
@@ -131,7 +133,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart }) {
 
       {/* Hover 액션 */}
       {hovered && (
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0" onDragStart={e => e.preventDefault()}>
           <button
             onClick={onMust}
             className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"

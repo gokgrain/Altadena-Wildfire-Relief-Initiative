@@ -24,18 +24,33 @@ function slotToTime(slot) {
   return `${h}:${m === 0 ? '00' : m}`
 }
 
-function getWeekDates() {
+function getWeekDates(weekOffset = 0) {
   const now = new Date()
   const day = now.getDay()
   const monday = new Date(now)
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + weekOffset * 7)
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday)
     d.setDate(monday.getDate() + i)
     return d
   })
 }
+
+function getWeekLabel(dates) {
+  const monday = dates[0]
+  const year = monday.getFullYear()
+  const month = monday.getMonth() + 1
+  const weekOfMonth = Math.ceil(monday.getDate() / 7)
+  return `${year}년 ${month}월 ${weekOfMonth}주차`
+}
+
 function dateKey(d) { return d.toISOString().slice(0, 10) }
+
+function isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+}
 
 function migrate(block) {
   if (block.startSlot !== undefined) return block
@@ -48,11 +63,13 @@ function migrate(block) {
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
 export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems, setMustTodos }) {
-  const dates = getWeekDates()
   const today = new Date()
   const todayIdx = (today.getDay() + 6) % 7
 
+  const [weekOffset, setWeekOffset] = useState(0)
   const [selectedDay, setSelectedDay] = useState(todayIdx)
+
+  const dates = getWeekDates(weekOffset)
   const [hoveredBlock, setHoveredBlock] = useState(null)
   const [dragOverSlot, setDragOverSlot] = useState(null)
   const [resizeState, setResizeState] = useState(null)
@@ -211,21 +228,34 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     <div className="panel h-full rounded-lg flex flex-col">
       {/* 헤더 */}
       <div className="panel-header">
-        <div className="flex items-center gap-1">
-          <button className="icon-btn" onClick={() => setSelectedDay(d => Math.max(0, d - 1))}>
+        <div className="flex items-center gap-1.5">
+          <button className="icon-btn" onClick={() => setWeekOffset(o => o - 1)}>
             <ChevronLeft size={12} />
           </button>
-          <button className="icon-btn" onClick={() => setSelectedDay(d => Math.min(6, d + 1))}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#ffffff60', minWidth: 90, textAlign: 'center' }}>
+            {getWeekLabel(dates)}
+          </span>
+          <button className="icon-btn" onClick={() => setWeekOffset(o => o + 1)}>
             <ChevronRight size={12} />
           </button>
+          {weekOffset !== 0 && (
+            <button
+              className="icon-btn"
+              onClick={() => { setWeekOffset(0); setSelectedDay(todayIdx) }}
+              style={{ fontSize: 8, color: '#7c5cfc90', padding: '1px 4px' }}
+              title="오늘로 이동"
+            >
+              오늘
+            </button>
+          )}
         </div>
-        <span style={{ fontSize: 9, color: '#ffffff20' }}>⠿ 드래그 → 배치·이동 | 하단 핸들로 크기 조절</span>
+        <span style={{ fontSize: 9, color: '#ffffff20' }}>⠿ 드래그 → 배치·이동</span>
       </div>
 
       {/* 요일 탭 */}
       <div className="flex-shrink-0 flex" style={{ borderBottom: '1px solid #ffffff0f' }}>
         {DAYS.map((d, i) => {
-          const isToday = i === todayIdx
+          const isToday = isSameDay(dates[i], today)
           const isSelected = i === selectedDay
           return (
             <button
