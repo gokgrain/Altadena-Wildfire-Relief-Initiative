@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Info } from 'lucide-react'
 
 const TYPE_CARD = {
@@ -19,7 +19,6 @@ function normalizeCreators(creators) {
   return []
 }
 
-// 제작진 배열을 역할별로 그룹핑
 function groupCreators(creators) {
   return creators.reduce((acc, c) => {
     if (!acc[c.role]) acc[c.role] = []
@@ -28,17 +27,36 @@ function groupCreators(creators) {
   }, {})
 }
 
+// 소수점 거리에서 부드럽게 보간
+function lerp(a, b, t) {
+  return a + (b - a) * t
+}
+
+function getScale(dist) {
+  if (dist <= 0) return 1
+  if (dist <= 1) return lerp(1, 0.78, dist)
+  if (dist <= 2) return lerp(0.78, 0.61, dist - 1)
+  return lerp(0.61, 0.48, Math.min(dist - 2, 1))
+}
+
+function getOpacity(dist) {
+  if (dist <= 2) return 1
+  if (dist >= 3) return 0
+  return lerp(1, 0, dist - 2)
+}
+
 // ── 커버 카드 ─────────────────────────────────────────────
 function CoverCard({ idea, position, onClick, isFlipped }) {
   const abs = Math.abs(position)
-  const scale = abs === 0 ? 1 : abs === 1 ? 0.78 : 0.61
+  const scale = getScale(abs)
   const translateX = position * 136
   const rotateY = position * -34
-  const zIndex = 10 - abs
-  const opacity = abs > 2 ? 0 : 1
+  const zIndex = Math.max(0, Math.round(10 - abs))
+  const opacity = getOpacity(abs)
   const cs = getCardStyle(idea.type)
   const creators = normalizeCreators(idea.creators)
   const grouped = groupCreators(creators)
+  const isFocused = abs < 0.5
 
   return (
     <div
@@ -50,15 +68,16 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
         marginLeft: -120, marginTop: -120,
         transform: `translateX(${translateX}px) scale(${scale}) rotateY(${rotateY}deg)`,
         zIndex, opacity,
-        transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'none',
         transformStyle: 'preserve-3d',
+        willChange: 'transform, opacity',
       }}
     >
       {/* 앞면 */}
       <div
         className="absolute inset-0 rounded-2xl overflow-hidden"
         style={{
-          boxShadow: abs === 0 ? '0 16px 48px rgba(0,0,0,0.22)' : '0 4px 16px rgba(0,0,0,0.12)',
+          boxShadow: isFocused ? '0 16px 48px rgba(0,0,0,0.22)' : '0 4px 16px rgba(0,0,0,0.12)',
           backfaceVisibility: 'hidden',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
           transition: 'transform 0.5s ease',
@@ -96,7 +115,6 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
           display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14,
         }}
       >
-        {/* 한 줄 기록 */}
         <p style={{
           fontSize: 13, fontWeight: 600, textAlign: 'center', lineHeight: 1.55,
           color: idea.oneliner ? '#1d1d1f' : '#c7c7cc',
@@ -104,8 +122,6 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
         }}>
           {idea.oneliner || '한 줄 기록 없음'}
         </p>
-
-        {/* 제작진 역할별 그룹 */}
         {Object.keys(grouped).length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, borderTop: '1px solid #00000010', paddingTop: 12 }}>
             {Object.entries(grouped).map(([role, names]) => (
@@ -127,8 +143,94 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
 export default function IdeaCoverflow({ ideas }) {
-  const [activeIdx, setActiveIdx] = useState(0)
   const [flipped, setFlipped] = useState(false)
+  // displayPos: 소수점 포지션 (0.0 ~ ideas.length-1), 렌더링 구동
+  const [displayPos, setDisplayPos] = useState(0)
+  // activeIdx: 스냅 완료 후 정보 바에 반영할 정수 인덱스
+  const [activeIdx, setActiveIdx] = useState(0)
+
+  const containerRef = useRef(null)
+  const posRef = useRef(0)   // 실제 소수점 포지션
+  const velRef = useRef(0)   // 카드/프레임 단위 속도
+  const rafRef = useRef(null)
+  const ideasLenRef = useRef(ideas ? ideas.length : 0)
+
+  useEffect(() => {
+    ideasLenRef.current = ideas ? ideas.length : 0
+    // ideas 삭제 등으로 activeIdx가 범위 초과 시 보정
+    if (ideas && ideas.length > 0 && posRef.current >= ideas.length) {
+      const clamped = ideas.length - 1
+      posRef.current = clamped
+      velRef.current = 0
+      setDisplayPos(clamped)
+      setActiveIdx(clamped)
+    }
+  }, [ideas])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    // ── 모멘텀 파라미터 ─────────────────────────────────
+    const SENSITIVITY = 0.0016  // 스크롤 픽셀 → 카드/프레임 속도
+    const FRICTION    = 0.87    // 프레임당 마찰 (낮을수록 빠르게 감속)
+    const MAX_VEL     = 3.5     // 최대 속도 (카드/프레임)
+    const STOP_VEL    = 0.003   // 이 이하면 스냅 후 정지
+
+    function animateLoop() {
+      velRef.current *= FRICTION
+
+      if (Math.abs(velRef.current) < STOP_VEL) {
+        // 가장 가까운 카드에 스냅
+        const len = ideasLenRef.current
+        const snapped = Math.max(0, Math.min(len - 1, Math.round(posRef.current)))
+        posRef.current = snapped
+        velRef.current = 0
+        setDisplayPos(snapped)
+        setActiveIdx(snapped)
+        rafRef.current = null
+        return
+      }
+
+      const len = ideasLenRef.current
+      posRef.current = Math.max(0, Math.min(len - 1, posRef.current + velRef.current))
+
+      // 경계에서 속도 소멸 (튕김 방지)
+      if (posRef.current <= 0 || posRef.current >= len - 1) {
+        velRef.current = 0
+      }
+
+      setDisplayPos(posRef.current)
+      // 정보 바는 가장 가까운 카드를 표시
+      setActiveIdx(Math.round(posRef.current))
+
+      rafRef.current = requestAnimationFrame(animateLoop)
+    }
+
+    function handleWheel(e) {
+      e.preventDefault()
+
+      // deltaMode 정규화 (0=px, 1=line, 2=page)
+      const raw = e.deltaMode === 1 ? e.deltaY * 30 : e.deltaMode === 2 ? e.deltaY * 300 : e.deltaY
+      velRef.current += raw * SENSITIVITY
+      velRef.current = Math.max(-MAX_VEL, Math.min(MAX_VEL, velRef.current))
+
+      setFlipped(false)
+
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(animateLoop)
+      }
+    }
+
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      el.removeEventListener('wheel', handleWheel)
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+    }
+  }, [])
 
   if (!ideas || ideas.length === 0) {
     return (
@@ -143,12 +245,11 @@ export default function IdeaCoverflow({ ideas }) {
     )
   }
 
-  const safeIdx = Math.min(activeIdx, ideas.length - 1)
-  const active = ideas[safeIdx]
+  const safeActive = Math.max(0, Math.min(ideas.length - 1, activeIdx))
+  const active = ideas[safeActive]
   const cs = getCardStyle(active.type)
   const activeCreators = normalizeCreators(active.creators)
 
-  // 정보바 제작진 요약: 감독 먼저, 최대 2명
   const creatorSummary = (() => {
     const directors = activeCreators.filter(c => c.role === '감독').map(c => c.name)
     const others = activeCreators.filter(c => c.role !== '감독').slice(0, 1).map(c => c.name)
@@ -157,11 +258,33 @@ export default function IdeaCoverflow({ ideas }) {
   })()
 
   function handleCardClick(idx) {
-    if (idx === safeIdx) {
+    const current = Math.round(posRef.current)
+    if (idx === current) {
       setFlipped(f => !f)
     } else {
+      // 클릭한 카드로 부드럽게 이동: 거리에 비례한 초기 속도 부여
+      const dist = idx - posRef.current
+      velRef.current = dist * 0.25
       setFlipped(false)
-      setActiveIdx(idx)
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(function loop() {
+          velRef.current *= 0.87
+          const len = ideasLenRef.current
+          posRef.current = Math.max(0, Math.min(len - 1, posRef.current + velRef.current))
+          setDisplayPos(posRef.current)
+          setActiveIdx(Math.round(posRef.current))
+          if (Math.abs(velRef.current) < 0.003) {
+            const snapped = Math.max(0, Math.min(len - 1, Math.round(posRef.current)))
+            posRef.current = snapped
+            velRef.current = 0
+            setDisplayPos(snapped)
+            setActiveIdx(snapped)
+            rafRef.current = null
+            return
+          }
+          rafRef.current = requestAnimationFrame(loop)
+        })
+      }
     }
   }
 
@@ -174,18 +297,24 @@ export default function IdeaCoverflow({ ideas }) {
         </button>
       </div>
 
-      <div className="flex-1 relative overflow-hidden" style={{ perspective: 1000 }}>
+      <div
+        ref={containerRef}
+        className="flex-1 relative overflow-hidden"
+        style={{ perspective: 1000 }}
+      >
         {ideas.map((idea, idx) => (
           <CoverCard
             key={idea.id}
             idea={idea}
-            position={idx - safeIdx}
+            position={idx - displayPos}
             onClick={() => handleCardClick(idx)}
-            isFlipped={flipped && idx === safeIdx}
+            isFlipped={flipped && idx === safeActive}
           />
         ))}
-        <div className="absolute inset-x-0 bottom-0 pointer-events-none"
-          style={{ height: '28%', background: 'linear-gradient(to bottom, transparent, #ffffff)' }} />
+        <div
+          className="absolute inset-x-0 bottom-0 pointer-events-none"
+          style={{ height: '28%', background: 'linear-gradient(to bottom, transparent, #ffffff)' }}
+        />
       </div>
 
       {/* 정보 바 */}
