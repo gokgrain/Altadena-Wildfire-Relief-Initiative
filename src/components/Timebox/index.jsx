@@ -46,6 +46,15 @@ function getWeekLabel(dates) {
 
 function dateKey(d) { return d.toISOString().slice(0, 10) }
 
+// 해당 날짜가 속한 주의 월요일 날짜를 weekKey로 사용 (통계용)
+function getWeekKey(date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  return monday.toISOString().slice(0, 10)
+}
+
 function isSameDay(a, b) {
   return a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -124,13 +133,20 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
   // 완료 → Brain Dump 재생성 항목 + Must Todo 제거
   // 진행중/미완료 → Brain Dump에 재생성(또는 업데이트), isMust·mustSourceId 복원
   function changeStatus(block, newStatus) {
-    saveBlock({ ...block, status: newStatus })
-
     if (newStatus === 'done') {
+      const completedAt = new Date().toISOString()
+      saveBlock({ ...block, status: 'done', completedAt })
       setBrainItems(prev => prev.filter(bi => bi.sourceBlockId !== block.id))
-      setMustTodos(prev => prev.filter(t => t.sourceId !== block.sourceId))
+      // 삭제 대신 완료 기록으로 보존 (통계용)
+      setMustTodos(prev => prev.map(t =>
+        t.sourceId === block.sourceId
+          ? { ...t, done: true, completedAt, weekKey: getWeekKey(completedAt) }
+          : t
+      ))
       return
     }
+
+    saveBlock({ ...block, status: newStatus })
 
     const persistedStatus = newStatus === 'in-progress' ? 'in-progress' : 'none'
     const mustSourceId = block.isMust ? block.sourceId : undefined
@@ -253,6 +269,8 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         color: BLOCK_COLORS[colorIdx],
         sourceId: inheritedSourceId,
         isMust: item.isMust || false,
+        brainCreatedAt: item.createdAt || null,   // Brain Dump 입력일 (소요일수 계산용)
+        scheduledAt: new Date().toISOString(),     // 타임박스에 배치된 시각
       }
       setTimeboxBlocks(prev => ({
         ...prev,

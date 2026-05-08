@@ -12,7 +12,7 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        {mustTodos.map(todo => (
+        {mustTodos.filter(t => !t.done).map(todo => (
           <div
             key={todo.id}
             className="flex items-center gap-2 px-2 py-2 rounded-lg group relative"
@@ -185,6 +185,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
       isMust: item.isMust || false,
       mustSourceId: item.mustSourceId || null,
       sourceBlockId: item.sourceBlockId || null,
+      createdAt: item.createdAt || null,   // Brain Dump 입력일 (소요일수 계산용)
     }))
     e.dataTransfer.effectAllowed = 'move'
   }
