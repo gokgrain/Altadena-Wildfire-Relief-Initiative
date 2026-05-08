@@ -15,6 +15,7 @@ export default function App() {
   const [brainItems, setBrainItems] = useLocalStorage('brain-dump', [])
   const [mustTodos, setMustTodos] = useLocalStorage('must-todos', [])
   const [timeboxBlocks, setTimeboxBlocks] = useLocalStorage('timebox-blocks', {})
+  const [ideas, setIdeas] = useLocalStorage('ideas', [])
 
   return (
     <div
@@ -57,10 +58,10 @@ export default function App() {
             {/* ── Bottom row ── */}
             <div className="flex gap-1.5 overflow-hidden" style={{ flex: '1 1 0%' }}>
               <div style={{ flex: '0 0 44%' }} className="overflow-hidden">
-                <IdeaCoverflow />
+                <IdeaCoverflow ideas={ideas} />
               </div>
               <div style={{ flex: '1 1 0%' }} className="overflow-hidden">
-                <IdeaList />
+                <IdeaList ideas={ideas} setIdeas={setIdeas} />
               </div>
             </div>
           </div>
