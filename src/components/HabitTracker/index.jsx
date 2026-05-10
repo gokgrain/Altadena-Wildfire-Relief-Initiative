@@ -103,7 +103,7 @@ function MiniLineChart({ data }) {
 }
 
 // ── Main Component ────────────────────────────────────────
-export default function HabitTracker() {
+export default function HabitTracker({ setBrainItems }) {
   const [habits, setHabits] = useLocalStorage('habits', [
     { id: 'h1', name: '운동' },
     { id: 'h2', name: '독서 30분' },
@@ -114,6 +114,7 @@ export default function HabitTracker() {
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [hoveredId, setHoveredId] = useState(null)
+  const [dropTarget, setDropTarget] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -153,6 +154,29 @@ export default function HabitTracker() {
     })
   }
 
+  function handleDragOver(e) {
+    if (e.dataTransfer.types.includes('application/brain-item')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      setDropTarget(true)
+    }
+  }
+
+  function handleDrop(e) {
+    setDropTarget(false)
+    const raw = e.dataTransfer.getData('application/brain-item')
+    if (!raw) return
+    e.preventDefault()
+    const item = JSON.parse(raw)
+    const name = item.text?.trim()
+    if (!name) return
+    if (habits.some(h => h.name === name)) return
+    setHabits(prev => [...prev, { id: `h${Date.now()}`, name }])
+    if (setBrainItems) {
+      setBrainItems(prev => prev.filter(i => i.id !== item.id))
+    }
+  }
+
   const rates = weeklyRates(habits, logs)
   const DAYS = ['월', '화', '수', '목', '금', '토', '일']
   const todayDayIdx = (() => {
@@ -161,7 +185,13 @@ export default function HabitTracker() {
   })()
 
   return (
-    <div className="panel h-full rounded-lg flex flex-col">
+    <div
+      className="panel h-full rounded-lg flex flex-col"
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDropTarget(false)}
+      onDrop={handleDrop}
+      style={dropTarget ? { outline: '2px dashed #34c75980', outlineOffset: -2 } : undefined}
+    >
       {/* Header */}
       <div className="panel-header">
         <span className="panel-title">Habit Tracker</span>

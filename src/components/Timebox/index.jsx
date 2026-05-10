@@ -73,16 +73,113 @@ function migrate(block) {
   }
 }
 
+// ── 블록 상세 편집 팝업 ────────────────────────────────────
+function BlockDetailModal({ block, onSave, onDelete, onClose }) {
+  const startMins = block.startSlot * 30 + START_HOUR * 60
+  const durationMins = block.durationSlots * 30
+
+  const [startH, setStartH] = useState(Math.floor(startMins / 60))
+  const [startM, setStartM] = useState(startMins % 60)
+  const [durH, setDurH] = useState(Math.floor(durationMins / 60))
+  const [durM, setDurM] = useState(durationMins % 60)
+  const [date, setDate] = useState(block._date || '')
+  const [memo, setMemo] = useState(block.memo || '')
+  const [text, setText] = useState(block.text || '')
+
+  function handleSave() {
+    const totalStartMins = startH * 60 + startM
+    const totalDurMins = durH * 60 + durM
+    const newStartSlot = Math.max(0, Math.min(TOTAL_SLOTS - 1, Math.round((totalStartMins - START_HOUR * 60) / 30)))
+    const newDurSlots = Math.max(1, Math.round(totalDurMins / 30))
+    onSave({ ...block, text: text.trim() || block.text, startSlot: newStartSlot, durationSlots: newDurSlots, memo }, date)
+  }
+
+  const inputSt = { fontSize: 13, color: '#1d1d1f', padding: '6px 10px', borderRadius: 8, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }
+  const numSt = { ...inputSt, width: 56, textAlign: 'center' }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.22)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ width: 360, maxWidth: '94vw', background: '#ffffff', borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.14)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+        {/* 헤더 */}
+        <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: block.color }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#86868b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>일정 편집</span>
+          <button onClick={onClose} style={{ lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#aeaeb2', padding: 2 }}>
+            <X size={15} />
+          </button>
+        </div>
+
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* 내용 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>내용</span>
+            <input value={text} onChange={e => setText(e.target.value)} style={inputSt} />
+          </div>
+
+          {/* 날짜 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>날짜</span>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputSt} />
+          </div>
+
+          {/* 시작 시간 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>시작 시간</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="number" min={START_HOUR} max={END_HOUR - 1} value={startH} onChange={e => setStartH(Number(e.target.value))} style={numSt} />
+              <span style={{ color: '#aeaeb2', fontWeight: 700 }}>:</span>
+              <input type="number" min={0} max={59} value={startM} onChange={e => setStartM(Number(e.target.value))} style={numSt} />
+            </div>
+          </div>
+
+          {/* 소요 시간 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>소요 시간</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="number" min={0} max={18} value={durH} onChange={e => setDurH(Number(e.target.value))} style={numSt} />
+              <span style={{ fontSize: 11, color: '#aeaeb2' }}>시간</span>
+              <input type="number" min={0} max={59} step={1} value={durM} onChange={e => setDurM(Number(e.target.value))} style={numSt} />
+              <span style={{ fontSize: 11, color: '#aeaeb2' }}>분</span>
+            </div>
+          </div>
+
+          {/* 메모 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>메모</span>
+            <textarea value={memo} onChange={e => setMemo(e.target.value)} rows={3} placeholder="메모를 입력하세요..." style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
+          </div>
+        </div>
+
+        {/* 푸터 */}
+        <div style={{ padding: '10px 18px 16px', borderTop: '1px solid #0000000f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={onDelete} style={{ fontSize: 12, color: '#ff3b30', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <X size={12} /> 삭제
+          </button>
+          <button onClick={handleSave} style={{ padding: '7px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: '#5856d6', color: '#fff' }}>
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems, setMustTodos }) {
+export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems, setMustTodos, weekOffset: weekOffsetProp, setWeekOffset: setWeekOffsetProp }) {
   const today = new Date()
   const todayIdx = (today.getDay() + 6) % 7
 
-  const [weekOffset, setWeekOffset] = useState(0)
+  const [localWeekOffset, setLocalWeekOffset] = useState(0)
+  // App에서 주간 캘린더와 공유할 weekOffset을 내려주면 사용, 아니면 내부 state
+  const weekOffset = weekOffsetProp !== undefined ? weekOffsetProp : localWeekOffset
+  const setWeekOffset = setWeekOffsetProp !== undefined ? setWeekOffsetProp : setLocalWeekOffset
   const [selectedDay, setSelectedDay] = useState(todayIdx)
 
   const dates = getWeekDates(weekOffset)
   const [hoveredBlock, setHoveredBlock] = useState(null)
+  const [detailBlock, setDetailBlock] = useState(null) // 상세 편집 팝업
+  const [editingBlockId, setEditingBlockId] = useState(null)
+  const [editingText, setEditingText] = useState('')
   const [dragOverSlot, setDragOverSlot] = useState(null)
   const [resizeState, setResizeState] = useState(null)
   const [movingBlockId, setMovingBlockId] = useState(null)
@@ -102,6 +199,29 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         [selectedDate]: idx >= 0 ? list.map(b => b.id === block.id ? block : b) : [...list, block],
       }
     })
+  }
+
+  // 상세 팝업에서 저장 — 날짜가 바뀌면 다른 날짜로 블록 이동
+  function saveBlockDetail(block, newDate) {
+    const srcDate = block._date || selectedDate
+    const updatedBlock = { ...block }
+    delete updatedBlock._date
+
+    if (newDate && newDate !== srcDate) {
+      // 다른 날짜로 이동
+      setTimeboxBlocks(prev => {
+        const srcList = (prev[srcDate] || []).filter(b => b.id !== block.id)
+        const tgtList = [...(prev[newDate] || []).map(migrate), updatedBlock]
+        return { ...prev, [srcDate]: srcList, [newDate]: tgtList }
+      })
+    } else {
+      setTimeboxBlocks(prev => {
+        const list = (prev[srcDate] || []).map(migrate)
+        const idx = list.findIndex(b => b.id === block.id)
+        return { ...prev, [srcDate]: idx >= 0 ? list.map(b => b.id === block.id ? updatedBlock : b) : [...list, updatedBlock] }
+      })
+    }
+    setDetailBlock(null)
   }
 
   function removeBlock(id) {
@@ -279,6 +399,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
 
   // ── 렌더 ─────────────────────────────────────────────────
   return (
+    <>
     <div className="panel h-full rounded-lg flex flex-col">
       {/* 헤더 */}
       <div className="panel-header">
@@ -413,17 +534,36 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                 }}
                 onMouseEnter={() => setHoveredBlock(block.id)}
                 onMouseLeave={() => setHoveredBlock(null)}
+                onClick={e => {
+                  if (editingBlockId === block.id) return
+                  e.stopPropagation()
+                  setDetailBlock({ ...block, _date: selectedDate })
+                }}
               >
                 {/* 텍스트 + 시간 */}
                 <div style={{ padding: '4px 22px 4px 6px', paddingBottom: isHov ? 26 : 4 }}>
-                  <div style={{
-                    fontSize: 11, lineHeight: 1.3,
-                    color: isDone ? '#aeaeb2' : '#1d1d1f',
-                    textDecoration: isDone ? 'line-through' : 'none',
-                    wordBreak: 'break-word',
-                  }}>
-                    {block.text}
-                  </div>
+                  {editingBlockId === block.id ? (
+                    <input
+                      autoFocus
+                      value={editingText}
+                      onChange={e => setEditingText(e.target.value)}
+                      onBlur={() => { saveBlock({ ...block, text: editingText.trim() || block.text }); setEditingBlockId(null) }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') { saveBlock({ ...block, text: editingText.trim() || block.text }); setEditingBlockId(null) }
+                        if (e.key === 'Escape') setEditingBlockId(null)
+                        e.stopPropagation()
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      style={{ width: '100%', fontSize: 11, color: '#1d1d1f', background: 'transparent', border: 'none', outline: 'none', borderBottom: `1px solid ${block.color}60`, fontFamily: 'inherit' }}
+                    />
+                  ) : (
+                    <div
+                      style={{ fontSize: 11, lineHeight: 1.3, color: isDone ? '#aeaeb2' : '#1d1d1f', textDecoration: isDone ? 'line-through' : 'none', wordBreak: 'break-word' }}
+                      onDoubleClick={e => { e.stopPropagation(); setEditingText(block.text); setEditingBlockId(block.id) }}
+                    >
+                      {block.text}
+                    </div>
+                  )}
                   {blockH >= 36 && (
                     <div style={{ fontSize: 9, color: '#aeaeb2', marginTop: 2 }}>
                       {slotToTime(block.startSlot)} – {slotToTime(block.startSlot + liveSlots)}
@@ -500,5 +640,15 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         </div>
       </div>
     </div>
+
+    {detailBlock && (
+      <BlockDetailModal
+        block={detailBlock}
+        onSave={saveBlockDetail}
+        onDelete={() => { removeBlock(detailBlock.id); setDetailBlock(null) }}
+        onClose={() => setDetailBlock(null)}
+      />
+    )}
+    </>
   )
 }

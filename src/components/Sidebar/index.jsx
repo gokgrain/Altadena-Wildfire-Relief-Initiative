@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutGrid, BarChart2 } from 'lucide-react'
+import { LayoutGrid, BarChart2, Archive } from 'lucide-react'
 
 function NavItem({ icon: Icon, label, active, onClick }) {
   const [hov, setHov] = useState(false)
@@ -32,6 +32,7 @@ export default function Sidebar({ page, setPage }) {
       paddingTop: 10, gap: 4,
     }}>
       <NavItem icon={LayoutGrid} label="대시보드" active={page === 'dashboard'} onClick={() => setPage('dashboard')} />
+      <NavItem icon={Archive} label="아이디어 아카이브" active={page === 'archive'} onClick={() => setPage('archive')} />
       <NavItem icon={BarChart2} label="통계" active={page === 'stats'} onClick={() => setPage('stats')} />
     </div>
   )

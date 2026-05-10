@@ -49,39 +49,59 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
 }
 
 // ── Brain Dump 개별 항목 ─────────────────────────────────
-function BrainItem({ item, onMust, onDelete, onDragStart }) {
+function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
   const [hovered, setHovered] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editText, setEditText] = useState(item.text)
+  const inputRef = useState(null)
 
   const isInProgress = item.persistedStatus === 'in-progress'
   const isScheduled = !!item.sourceBlockId
 
+  function commitEdit() {
+    const t = editText.trim()
+    if (t && t !== item.text) onEdit(t)
+    setEditing(false)
+  }
+
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
+      draggable={!editing}
+      onDragStart={editing ? undefined : onDragStart}
       className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
-      style={{
-        background: hovered ? '#00000005' : 'transparent',
-        cursor: 'grab',
-      }}
+      style={{ background: hovered ? '#00000005' : 'transparent', cursor: editing ? 'default' : 'grab' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Drag handle indicator */}
-      <div
-        className="flex-shrink-0 transition-colors"
-        style={{ color: hovered ? '#aeaeb2' : 'transparent' }}
-      >
+      {/* Drag handle */}
+      <div className="flex-shrink-0 transition-colors" style={{ color: hovered && !editing ? '#aeaeb2' : 'transparent' }}>
         <GripVertical size={13} />
       </div>
 
       {/* Bullet */}
       <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#c7c7cc' }} />
 
-      {/* Text */}
-      <span className="text-xs flex-1 min-w-0 truncate" style={{ color: '#86868b' }}>
-        {item.text}
-      </span>
+      {/* Text / Edit input */}
+      {editing ? (
+        <input
+          autoFocus
+          value={editText}
+          onChange={e => setEditText(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') { setEditText(item.text); setEditing(false) } }}
+          className="text-xs flex-1 min-w-0 bg-transparent outline-none"
+          style={{ color: '#1d1d1f', borderBottom: '1px solid #5856d640' }}
+          onClick={e => e.stopPropagation()}
+        />
+      ) : (
+        <span
+          className="text-xs flex-1 min-w-0 truncate"
+          style={{ color: '#86868b' }}
+          onDoubleClick={() => { setEditText(item.text); setEditing(true) }}
+        >
+          {item.text}
+        </span>
+      )}
 
       {/* 배지: 타임박스 배치중 */}
       {isScheduled && (
@@ -170,6 +190,10 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
     }
   }
 
+  function editItem(id, newText) {
+    setBrainItems(prev => prev.map(i => i.id === id ? { ...i, text: newText } : i))
+  }
+
   function deleteItem(id) {
     const item = brainItems.find(i => i.id === id)
     const lookupId = item?.mustSourceId || id
@@ -226,6 +250,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
             onMust={() => toggleMust(item)}
             onDelete={() => deleteItem(item.id)}
             onDragStart={e => handleDragStart(e, item)}
+            onEdit={newText => editItem(item.id, newText)}
           />
         ))}
       </div>

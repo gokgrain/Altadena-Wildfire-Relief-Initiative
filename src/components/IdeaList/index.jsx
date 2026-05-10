@@ -263,6 +263,70 @@ function CreatorsField({ value, onChange }) {
   )
 }
 
+// ── 별점 컴포넌트 (0.5 단위) ──────────────────────────────
+function StarRating({ value = 0, onChange, size = 14, readonly = false }) {
+  const [hoverVal, setHoverVal] = useState(null)
+  const display = hoverVal !== null ? hoverVal : value
+
+  function getStarFill(starIdx) {
+    const full = starIdx + 1
+    const half = starIdx + 0.5
+    if (display >= full) return 'full'
+    if (display >= half) return 'half'
+    return 'empty'
+  }
+
+  function handleMouseMove(e, starIdx) {
+    if (readonly) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    setHoverVal(x < rect.width / 2 ? starIdx + 0.5 : starIdx + 1)
+  }
+
+  function handleClick(e, starIdx) {
+    if (readonly || !onChange) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const newVal = x < rect.width / 2 ? starIdx + 0.5 : starIdx + 1
+    onChange(newVal === value ? 0 : newVal)
+  }
+
+  return (
+    <div
+      style={{ display: 'inline-flex', gap: 1 }}
+      onMouseLeave={() => !readonly && setHoverVal(null)}
+    >
+      {[0, 1, 2, 3, 4].map(i => {
+        const fill = getStarFill(i)
+        return (
+          <div
+            key={i}
+            style={{ position: 'relative', width: size, height: size, cursor: readonly ? 'default' : 'pointer', flexShrink: 0 }}
+            onMouseMove={e => handleMouseMove(e, i)}
+            onClick={e => handleClick(e, i)}
+          >
+            {/* empty star */}
+            <svg width={size} height={size} viewBox="0 0 24 24" style={{ position: 'absolute', inset: 0 }}>
+              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="none" stroke="#d1d1d6" strokeWidth="2" strokeLinejoin="round" />
+            </svg>
+            {/* filled portion */}
+            {fill !== 'empty' && (
+              <svg width={size} height={size} viewBox="0 0 24 24" style={{ position: 'absolute', inset: 0 }}>
+                <defs>
+                  <clipPath id={`sp-${i}-${size}`}>
+                    <rect x="0" y="0" width={fill === 'half' ? '12' : '24'} height="24" />
+                  </clipPath>
+                </defs>
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="#ff9500" stroke="#ff9500" strokeWidth="2" strokeLinejoin="round" clipPath={`url(#sp-${i}-${size})`} />
+              </svg>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function Field({ label, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -290,6 +354,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
     image:    idea.image    || null,
     oneliner: idea.oneliner || '',
     memo:     idea.memo     || '',
+    rating:   idea.rating   || 0,
   })
 
   async function handleImageFile(e) {
@@ -401,6 +466,15 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
             />
           </Field>
 
+          <Field label="별점">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <StarRating value={form.rating} onChange={r => setForm(f => ({ ...f, rating: r }))} size={20} />
+              {form.rating > 0 && (
+                <span style={{ fontSize: 12, color: '#ff9500', fontWeight: 600 }}>{form.rating.toFixed(1)}</span>
+              )}
+            </div>
+          </Field>
+
           <Field label="자유 메모">
             <textarea
               value={form.memo}
@@ -429,13 +503,22 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function IdeaList({ ideas, setIdeas, categories, setCategories }) {
-  const [activeType, setActiveType] = useState('전체')
+export default function IdeaList({ ideas, setIdeas, categories, setCategories, activeType: activeTypeProp, setActiveType: setActiveTypeProp }) {
+  const [localActiveType, setLocalActiveType] = useState('전체')
+  // ArchivePage에서 공유 필터를 내려주면 그것을 사용, 아니면 내부 state
+  const activeType = activeTypeProp !== undefined ? activeTypeProp : localActiveType
+  const setActiveType = setActiveTypeProp !== undefined ? setActiveTypeProp : setLocalActiveType
   const [hovered, setHovered] = useState(null)
   const [modal, setModal] = useState(null)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [sortBy, setSortBy] = useState('date') // 'date' | 'rating' | 'title'
 
-  const filtered = activeType === '전체' ? ideas : ideas.filter(i => i.type === activeType)
+  const baseFiltered = activeType === '전체' ? ideas : ideas.filter(i => i.type === activeType)
+  const filtered = [...baseFiltered].sort((a, b) => {
+    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
+    if (sortBy === 'title') return a.title.localeCompare(b.title, 'ko')
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  })
 
   function openNew() { setModal({ idea: { type: categories[0]?.name || '' } }) }
   function openEdit(idea) { setModal({ idea }) }
@@ -495,11 +578,25 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories })
           ))}
         </div>
 
-        <div className="flex-shrink-0 grid px-3 py-2 text-[9px] font-semibold tracking-widest uppercase"
-          style={{ gridTemplateColumns: '1fr 70px 50px', borderBottom: '1px solid #00000008', color: '#aeaeb2' }}>
-          <span>제목</span>
-          <span>종류</span>
-          <span className="text-right">날짜</span>
+        {/* 정렬 + 컬럼 헤더 */}
+        <div className="flex-shrink-0 flex items-center px-3 py-2 gap-2" style={{ borderBottom: '1px solid #00000008' }}>
+          <div className="flex-1 grid text-[9px] font-semibold tracking-widest uppercase" style={{ gridTemplateColumns: '1fr 70px 80px 44px', color: '#aeaeb2' }}>
+            <span>제목</span>
+            <span>종류</span>
+            <span>별점</span>
+            <span className="text-right">날짜</span>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {[['date','날짜'],['rating','별점'],['title','제목']].map(([k, label]) => (
+              <button key={k} onClick={() => setSortBy(k)}
+                style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, border: 'none', cursor: 'pointer', fontWeight: 600,
+                  background: sortBy === k ? '#5856d618' : '#00000008',
+                  color: sortBy === k ? '#5856d6' : '#aeaeb2',
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -520,7 +617,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories })
               <div key={idea.id}>
                 <div
                   className="grid items-center px-3 py-2.5 cursor-pointer transition-colors duration-100"
-                  style={{ gridTemplateColumns: '1fr 70px 50px', background: hovered === idea.id ? '#00000005' : 'transparent' }}
+                  style={{ gridTemplateColumns: '1fr 70px 80px 44px', background: hovered === idea.id ? '#00000005' : 'transparent' }}
                   onClick={() => openEdit(idea)}
                   onMouseEnter={() => setHovered(idea.id)}
                   onMouseLeave={() => setHovered(null)}
@@ -543,6 +640,21 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories })
                       style={{ background: color + '18', color }}>
                       {idea.type}
                     </span>
+                  </div>
+                  <div onClick={e => e.stopPropagation()}>
+                    {idea.rating > 0 ? (
+                      <StarRating
+                        value={idea.rating}
+                        size={11}
+                        onChange={r => setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, rating: r } : i))}
+                      />
+                    ) : (
+                      <StarRating
+                        value={0}
+                        size={11}
+                        onChange={r => setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, rating: r } : i))}
+                      />
+                    )}
                   </div>
                   <span className="text-[10px] text-right" style={{ color: '#aeaeb2' }}>
                     {formatDate(idea.createdAt)}

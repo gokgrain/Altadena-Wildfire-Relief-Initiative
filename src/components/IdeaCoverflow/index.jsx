@@ -97,9 +97,8 @@ function CoverCard({ idea, position, onClick, isFlipped, categories }) {
             </div>
           </div>
         ) : (
-          <div style={{ width: '100%', height: '100%', background: `linear-gradient(145deg, ${cs.bg} 0%, ${cs.accent}28 100%)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: `radial-gradient(circle at 35% 30%, ${cs.accent}90, ${cs.accent}18)` }} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.80)', textAlign: 'center', lineHeight: 1.35 }}>{idea.title}</span>
+          <div style={{ width: '100%', height: '100%', background: `linear-gradient(145deg, ${cs.bg} 0%, ${cs.accent}28 100%)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 16px' }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: '#ffffff', textAlign: 'center', lineHeight: 1.35, letterSpacing: '-0.01em', wordBreak: 'keep-all' }}>{idea.title}</span>
             <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: cs.accent + '35', color: cs.accent }}>{idea.type}</span>
           </div>
         )}
@@ -248,16 +247,6 @@ export default function IdeaCoverflow({ ideas, categories }) {
   }
 
   const safeActive = Math.max(0, Math.min(ideas.length - 1, activeIdx))
-  const active = ideas[safeActive]
-  const cs = getCardStyle(active.type, categories)
-  const activeCreators = normalizeCreators(active.creators)
-
-  const creatorSummary = (() => {
-    const directors = activeCreators.filter(c => c.role === '감독').map(c => c.name)
-    const others = activeCreators.filter(c => c.role !== '감독').slice(0, 1).map(c => c.name)
-    const names = [...directors, ...others].slice(0, 2)
-    return names.length > 0 ? names.join(' · ') + (activeCreators.length > names.length ? ' 외' : '') : null
-  })()
 
   function handleCardClick(idx) {
     const current = Math.round(posRef.current)
@@ -320,25 +309,6 @@ export default function IdeaCoverflow({ ideas, categories }) {
         />
       </div>
 
-      {/* 정보 바 */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3" style={{ borderTop: '1px solid #0000000f' }}>
-        {active.image ? (
-          <img src={active.image} alt="" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
-        ) : (
-          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: cs.accent + '18' }}>
-            <div className="w-2 h-2 rounded-full" style={{ background: cs.accent }} />
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-semibold truncate" style={{ color: '#1d1d1f' }}>{active.title}</div>
-          <div className="text-[10px] truncate" style={{ color: '#86868b' }}>
-            {active.type}{creatorSummary ? ` · ${creatorSummary}` : ''}
-          </div>
-        </div>
-        <button className="icon-btn" onClick={() => setFlipped(f => !f)} title="뒤집기">
-          <Info size={12} />
-        </button>
-      </div>
     </div>
   )
 }
