@@ -1,17 +1,13 @@
 import { useState, useRef } from 'react'
-import { Plus, X, Trash2, FileText, ImagePlus } from 'lucide-react'
+import { Plus, X, Trash2, FileText, ImagePlus, Settings } from 'lucide-react'
 
-const TYPES = ['영화', '음악', '드라마', '책', '만화']
-const ALL_TYPES = ['전체', ...TYPES]
 const PRESET_ROLES = ['감독', '작가', '배우', '가수', 'PD', '기타']
 
-const TYPE_COLORS = {
-  '영화': '#ff3b30',
-  '음악': '#5856d6',
-  '드라마': '#ff2d55',
-  '책': '#34c759',
-  '만화': '#ff9500',
-}
+const COLOR_PALETTE = [
+  '#ff3b30', '#ff6b35', '#ff9500', '#ffcc00',
+  '#34c759', '#00c7be', '#32ade6', '#007aff',
+  '#5856d6', '#af52de', '#ff2d55', '#8e8e93',
+]
 
 function formatDate(iso) {
   if (!iso) return '--'
@@ -20,7 +16,6 @@ function formatDate(iso) {
   return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
 }
 
-// 이미지를 600px 이하 JPEG로 압축
 function resizeImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -43,11 +38,131 @@ function resizeImage(file) {
   })
 }
 
-// 구버전 string 포맷 호환
 function normalizeCreators(creators) {
   if (!creators) return []
   if (Array.isArray(creators)) return creators
   return []
+}
+
+// ── 카테고리 관리 모달 ─────────────────────────────────────
+function CategoryModal({ categories, setCategories, ideas, onClose }) {
+  const [newName, setNewName] = useState('')
+  const [newColor, setNewColor] = useState(COLOR_PALETTE[0])
+  const [openColorFor, setOpenColorFor] = useState(null)
+
+  function addCategory() {
+    const name = newName.trim()
+    if (!name || categories.some(c => c.name === name)) return
+    setCategories(prev => [...prev, { name, color: newColor }])
+    setNewName('')
+    setNewColor(COLOR_PALETTE[0])
+  }
+
+  function deleteCategory(name) {
+    setCategories(prev => prev.filter(c => c.name !== name))
+  }
+
+  function updateColor(catName, color) {
+    setCategories(prev => prev.map(c => c.name === catName ? { ...c, color } : c))
+    setOpenColorFor(null)
+  }
+
+  const dotStyle = (color, active) => ({
+    width: 20, height: 20, borderRadius: '50%', background: color,
+    border: 'none', cursor: 'pointer', flexShrink: 0,
+    boxShadow: active ? `0 0 0 2px #fff, 0 0 0 3.5px ${color}` : 'none',
+    transition: 'box-shadow 0.12s',
+  })
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.22)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <div
+        style={{ width: 360, maxWidth: '94vw', maxHeight: '82vh', background: '#ffffff', borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.14)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* 헤더 */}
+        <div style={{ padding: '15px 20px 12px', borderBottom: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#86868b', letterSpacing: '0.12em', textTransform: 'uppercase' }}>카테고리 관리</span>
+          <button onClick={onClose} style={{ color: '#aeaeb2', cursor: 'pointer', lineHeight: 0, background: 'none', border: 'none', padding: 4, borderRadius: 6 }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* 카테고리 목록 */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '10px 16px' }}>
+          {categories.length === 0 && (
+            <p style={{ fontSize: 11, color: '#c7c7cc', textAlign: 'center', padding: '16px 0' }}>카테고리가 없습니다</p>
+          )}
+          {categories.map(cat => {
+            const count = ideas.filter(i => i.type === cat.name).length
+            const canDelete = count === 0
+            const isOpen = openColorFor === cat.name
+            return (
+              <div key={cat.name} style={{ marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: isOpen ? '10px 10px 0 0' : 10, background: '#f5f5f7' }}>
+                  <button
+                    onClick={() => setOpenColorFor(isOpen ? null : cat.name)}
+                    style={dotStyle(cat.color, isOpen)}
+                    title="색상 변경"
+                  />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{cat.name}</span>
+                  {count > 0 && (
+                    <span style={{ fontSize: 10, color: '#aeaeb2' }}>{count}개</span>
+                  )}
+                  <button
+                    onClick={() => canDelete && deleteCategory(cat.name)}
+                    title={canDelete ? '삭제' : `${count}개 아이디어에서 사용 중 — 먼저 아이디어의 카테고리를 변경하세요`}
+                    style={{ lineHeight: 0, background: 'none', border: 'none', cursor: canDelete ? 'pointer' : 'not-allowed', color: canDelete ? '#ff3b30' : '#c7c7cc', padding: 2, opacity: canDelete ? 1 : 0.4 }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+                {isOpen && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, padding: '10px 12px', background: '#ebebf0', borderRadius: '0 0 10px 10px' }}>
+                    {COLOR_PALETTE.map(color => (
+                      <button key={color} onClick={() => updateColor(cat.name, color)} style={dotStyle(color, cat.color === color)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 새 카테고리 추가 */}
+        <div style={{ padding: '12px 16px 18px', borderTop: '1px solid #0000000f', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>새 카테고리</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+            {COLOR_PALETTE.map(color => (
+              <button key={color} onClick={() => setNewColor(color)} style={dotStyle(color, newColor === color)} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ width: 16, height: 16, borderRadius: '50%', background: newColor, flexShrink: 0 }} />
+            <input
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') addCategory() }}
+              placeholder="카테고리 이름 입력 후 Enter"
+              style={{ flex: 1, fontSize: 13, color: '#1d1d1f', padding: '7px 10px', borderRadius: 8, border: `1px solid ${newName.trim() && categories.some(c => c.name === newName.trim()) ? '#ff3b3060' : '#0000000f'}`, background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
+            />
+            <button
+              onClick={addCategory}
+              style={{ width: 34, height: 34, borderRadius: 8, border: 'none', cursor: 'pointer', background: newName.trim() && !categories.some(c => c.name === newName.trim()) ? '#5856d6' : '#f5f5f7', color: newName.trim() && !categories.some(c => c.name === newName.trim()) ? '#fff' : '#aeaeb2', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.12s', flexShrink: 0 }}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          {newName.trim() && categories.some(c => c.name === newName.trim()) && (
+            <span style={{ fontSize: 10, color: '#ff3b30', marginTop: -4 }}>이미 존재하는 카테고리입니다</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── 제작진 필드 컴포넌트 ──────────────────────────────────
@@ -72,7 +187,6 @@ function CreatorsField({ value, onChange }) {
     onChange(creators.filter((_, i) => i !== idx))
   }
 
-  // 역할별 그룹 (삽입 순서 유지)
   const groups = creators.reduce((acc, c, idx) => {
     if (!acc[c.role]) acc[c.role] = []
     acc[c.role].push({ ...c, _idx: idx })
@@ -81,8 +195,6 @@ function CreatorsField({ value, onChange }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-      {/* 역할 선택 칩 */}
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {PRESET_ROLES.map(r => (
           <button
@@ -101,77 +213,43 @@ function CreatorsField({ value, onChange }) {
         ))}
       </div>
 
-      {/* 기타 선택 시 역할명 직접 입력 */}
       {isCustom && (
         <input
           value={customRole}
           onChange={e => setCustomRole(e.target.value)}
           placeholder="역할명 입력 (예: 촬영감독)"
-          style={{
-            fontSize: 12, color: '#1d1d1f', padding: '7px 10px',
-            borderRadius: 7, border: '1px solid #0000000f',
-            background: '#f5f5f7', outline: 'none', fontFamily: 'inherit',
-          }}
+          style={{ fontSize: 12, color: '#1d1d1f', padding: '7px 10px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
         />
       )}
 
-      {/* 이름 입력 + 추가 버튼 */}
       <div style={{ display: 'flex', gap: 6 }}>
         <input
           value={nameInput}
           onChange={e => setNameInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') add() }}
           placeholder={`${finalRole || '역할 선택 후'} 이름 입력 후 Enter`}
-          style={{
-            flex: 1, fontSize: 12, color: '#1d1d1f', padding: '7px 10px',
-            borderRadius: 7, border: '1px solid #0000000f',
-            background: '#f5f5f7', outline: 'none', fontFamily: 'inherit',
-          }}
+          style={{ flex: 1, fontSize: 12, color: '#1d1d1f', padding: '7px 10px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
         />
         <button
           onClick={add}
-          style={{
-            width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: nameInput.trim() && finalRole ? '#5856d6' : '#f5f5f7',
-            color: nameInput.trim() && finalRole ? '#fff' : '#aeaeb2',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.12s', flexShrink: 0,
-          }}
+          style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer', background: nameInput.trim() && finalRole ? '#5856d6' : '#f5f5f7', color: nameInput.trim() && finalRole ? '#fff' : '#aeaeb2', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.12s', flexShrink: 0 }}
         >
           <Plus size={13} />
         </button>
       </div>
 
-      {/* 역할별 그룹 칩 */}
       {Object.keys(groups).length > 0 && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 7,
-          padding: '10px 12px', borderRadius: 10, background: '#f5f5f7',
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: '10px 12px', borderRadius: 10, background: '#f5f5f7' }}>
           {Object.entries(groups).map(([role, members]) => (
             <div key={role} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: '#aeaeb2',
-                width: 30, paddingTop: 4, flexShrink: 0, letterSpacing: '0.05em',
-              }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', width: 30, paddingTop: 4, flexShrink: 0, letterSpacing: '0.05em' }}>
                 {role}
               </span>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {members.map(c => (
-                  <span
-                    key={c._idx}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      padding: '3px 8px 3px 10px', borderRadius: 99,
-                      fontSize: 11, fontWeight: 500, background: '#ffffff',
-                      color: '#1d1d1f', border: '1px solid #00000008',
-                    }}
-                  >
+                  <span key={c._idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px 3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 500, background: '#ffffff', color: '#1d1d1f', border: '1px solid #00000008' }}>
                     {c.name}
-                    <button
-                      onClick={() => remove(c._idx)}
-                      style={{ lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#c7c7cc', padding: 0 }}
-                    >
+                    <button onClick={() => remove(c._idx)} style={{ lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#c7c7cc', padding: 0 }}>
                       <X size={9} />
                     </button>
                   </span>
@@ -185,7 +263,6 @@ function CreatorsField({ value, onChange }) {
   )
 }
 
-// ── 라벨 + 입력 래퍼 ─────────────────────────────────────
 function Field({ label, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -198,12 +275,17 @@ function Field({ label, children }) {
 }
 
 // ── 아이디어 추가/편집 팝업 ───────────────────────────────
-function IdeaModal({ idea, onSave, onDelete, onClose }) {
+function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
   const isNew = !idea.id
   const fileRef = useRef(null)
+
+  const defaultType = categories.some(c => c.name === idea.type)
+    ? idea.type
+    : (categories[0]?.name || '')
+
   const [form, setForm] = useState({
     title:    idea.title    || '',
-    type:     idea.type     || '영화',
+    type:     defaultType,
     creators: normalizeCreators(idea.creators),
     image:    idea.image    || null,
     oneliner: idea.oneliner || '',
@@ -217,7 +299,7 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
       const compressed = await resizeImage(file)
       setForm(f => ({ ...f, image: compressed }))
     } catch {
-      // 유효하지 않은 이미지 파일 — 무시
+      // 유효하지 않은 이미지 파일
     }
   }
 
@@ -236,29 +318,14 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,0.22)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
+      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.22)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}
     >
       <div
-        style={{
-          width: 500, maxWidth: '94vw', maxHeight: '90vh',
-          background: '#ffffff', borderRadius: 16,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.14)',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        }}
+        style={{ width: 500, maxWidth: '94vw', maxHeight: '90vh', background: '#ffffff', borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.14)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* 헤더 */}
-        <div style={{
-          padding: '15px 20px 12px', flexShrink: 0,
-          borderBottom: '1px solid #0000000f',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
+        <div style={{ padding: '15px 20px 12px', flexShrink: 0, borderBottom: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#86868b', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             {isNew ? '새 아이디어' : '아이디어 편집'}
           </span>
@@ -267,25 +334,17 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
           </button>
         </div>
 
-        {/* 바디 */}
         <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', flex: 1 }}>
 
-          {/* 이미지 첨부 */}
           <Field label="이미지">
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageFile} />
             {form.image ? (
               <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
                 <img src={form.image} alt="cover" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
-                <button
-                  onClick={() => setForm(f => ({ ...f, image: null }))}
-                  style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
+                <button onClick={() => setForm(f => ({ ...f, image: null }))} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={12} />
                 </button>
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: '#fff', fontSize: 10, fontWeight: 600 }}
-                >
+                <button onClick={() => fileRef.current?.click()} style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: '#fff', fontSize: 10, fontWeight: 600 }}>
                   교체
                 </button>
               </div>
@@ -302,7 +361,6 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
             )}
           </Field>
 
-          {/* 제목 */}
           <Field label="제목">
             <input
               autoFocus
@@ -314,32 +372,26 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
             />
           </Field>
 
-          {/* 종류 */}
           <Field label="종류">
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {TYPES.map(t => (
-                <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
+              {categories.map(cat => (
+                <button key={cat.name} onClick={() => setForm(f => ({ ...f, type: cat.name }))}
                   style={{
                     padding: '5px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
                     cursor: 'pointer', border: 'none', transition: 'all 0.15s',
-                    background: form.type === t ? (TYPE_COLORS[t] + '18') : '#f5f5f7',
-                    color: form.type === t ? TYPE_COLORS[t] : '#aeaeb2',
-                    outline: form.type === t ? `1.5px solid ${TYPE_COLORS[t]}35` : '1.5px solid transparent',
+                    background: form.type === cat.name ? (cat.color + '18') : '#f5f5f7',
+                    color: form.type === cat.name ? cat.color : '#aeaeb2',
+                    outline: form.type === cat.name ? `1.5px solid ${cat.color}35` : '1.5px solid transparent',
                   }}
-                >{t}</button>
+                >{cat.name}</button>
               ))}
             </div>
           </Field>
 
-          {/* 제작진 */}
           <Field label="제작진">
-            <CreatorsField
-              value={form.creators}
-              onChange={creators => setForm(f => ({ ...f, creators }))}
-            />
+            <CreatorsField value={form.creators} onChange={creators => setForm(f => ({ ...f, creators }))} />
           </Field>
 
-          {/* 한 줄 기록 */}
           <Field label="한 줄 기록">
             <input
               value={form.oneliner}
@@ -349,7 +401,6 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
             />
           </Field>
 
-          {/* 자유 메모 */}
           <Field label="자유 메모">
             <textarea
               value={form.memo}
@@ -361,7 +412,6 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
           </Field>
         </div>
 
-        {/* 푸터 */}
         <div style={{ padding: '12px 20px 16px', flexShrink: 0, borderTop: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {!isNew ? (
             <button onClick={onDelete} style={{ fontSize: 12, color: '#ff3b30', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -379,14 +429,15 @@ function IdeaModal({ idea, onSave, onDelete, onClose }) {
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function IdeaList({ ideas, setIdeas }) {
+export default function IdeaList({ ideas, setIdeas, categories, setCategories }) {
   const [activeType, setActiveType] = useState('전체')
   const [hovered, setHovered] = useState(null)
   const [modal, setModal] = useState(null)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
 
   const filtered = activeType === '전체' ? ideas : ideas.filter(i => i.type === activeType)
 
-  function openNew() { setModal({ idea: { type: TYPES[0] } }) }
+  function openNew() { setModal({ idea: { type: categories[0]?.name || '' } }) }
   function openEdit(idea) { setModal({ idea }) }
 
   function handleSave(data) {
@@ -403,20 +454,43 @@ export default function IdeaList({ ideas, setIdeas }) {
     setModal(null)
   }
 
+  // 활성 필터가 삭제된 카테고리면 '전체'로 복귀
+  const safeActiveType = categories.some(c => c.name === activeType) ? activeType : '전체'
+
+  const catColor = name => categories.find(c => c.name === name)?.color || '#aeaeb2'
+
   return (
     <>
       <div className="panel h-full rounded-lg flex flex-col">
         <div className="panel-header">
           <span className="panel-title">Idea List</span>
-          <button className="icon-btn" onClick={openNew}><Plus size={13} /></button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button className="icon-btn" onClick={() => setShowCategoryModal(true)} title="카테고리 관리">
+              <Settings size={12} />
+            </button>
+            <button className="icon-btn" onClick={openNew}>
+              <Plus size={13} />
+            </button>
+          </div>
         </div>
 
+        {/* 필터 탭 */}
         <div className="flex-shrink-0 flex items-center gap-1 px-3 py-2 overflow-x-auto" style={{ borderBottom: '1px solid #0000000f' }}>
-          {ALL_TYPES.map(type => (
-            <button key={type} onClick={() => setActiveType(type)}
+          <button
+            onClick={() => setActiveType('전체')}
+            className="flex-shrink-0 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors duration-150"
+            style={{ background: safeActiveType === '전체' ? '#00000008' : 'transparent', color: safeActiveType === '전체' ? '#1d1d1f' : '#aeaeb2' }}
+          >
+            전체
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.name}
+              onClick={() => setActiveType(cat.name)}
               className="flex-shrink-0 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors duration-150"
-              style={{ background: activeType === type ? '#00000008' : 'transparent', color: activeType === type ? '#1d1d1f' : '#aeaeb2' }}>
-              {type}
+              style={{ background: safeActiveType === cat.name ? cat.color + '18' : 'transparent', color: safeActiveType === cat.name ? cat.color : '#aeaeb2' }}
+            >
+              {cat.name}
             </button>
           ))}
         </div>
@@ -440,6 +514,7 @@ export default function IdeaList({ ideas, setIdeas }) {
             const creatorSummary = creators.length > 0
               ? creators.slice(0, 2).map(c => c.name).join(' · ') + (creators.length > 2 ? ` 외 ${creators.length - 2}명` : '')
               : null
+            const color = catColor(idea.type)
 
             return (
               <div key={idea.id}>
@@ -465,7 +540,7 @@ export default function IdeaList({ ideas, setIdeas }) {
                   </div>
                   <div>
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold"
-                      style={{ background: (TYPE_COLORS[idea.type] || '#aeaeb2') + '18', color: TYPE_COLORS[idea.type] || '#aeaeb2' }}>
+                      style={{ background: color + '18', color }}>
                       {idea.type}
                     </span>
                   </div>
@@ -488,8 +563,23 @@ export default function IdeaList({ ideas, setIdeas }) {
         </div>
       </div>
 
+      {showCategoryModal && (
+        <CategoryModal
+          categories={categories}
+          setCategories={setCategories}
+          ideas={ideas}
+          onClose={() => setShowCategoryModal(false)}
+        />
+      )}
+
       {modal && (
-        <IdeaModal idea={modal.idea} onSave={handleSave} onDelete={handleDelete} onClose={() => setModal(null)} />
+        <IdeaModal
+          idea={modal.idea}
+          categories={categories}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onClose={() => setModal(null)}
+        />
       )}
     </>
   )

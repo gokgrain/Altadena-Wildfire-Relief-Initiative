@@ -8,14 +8,22 @@ import IdeaCoverflow from './components/IdeaCoverflow'
 import IdeaList from './components/IdeaList'
 import StatsPage from './pages/StatsPage'
 
+const DEFAULT_CATEGORIES = [
+  { name: '영화', color: '#ff3b30' },
+  { name: '음악', color: '#5856d6' },
+  { name: '드라마', color: '#ff2d55' },
+  { name: '책',   color: '#34c759' },
+  { name: '만화', color: '#ff9500' },
+]
+
 export default function App() {
   const [page, setPage] = useState('dashboard')
 
-  // ── 공유 상태 ──────────────────────────────────────────
   const [brainItems, setBrainItems] = useLocalStorage('brain-dump', [])
   const [mustTodos, setMustTodos] = useLocalStorage('must-todos', [])
   const [timeboxBlocks, setTimeboxBlocks] = useLocalStorage('timebox-blocks', {})
   const [ideas, setIdeas] = useLocalStorage('ideas', [])
+  const [categories, setCategories] = useLocalStorage('idea-categories', DEFAULT_CATEGORIES)
 
   return (
     <div
@@ -29,12 +37,9 @@ export default function App() {
           <div className="flex flex-col h-full" style={{ gap: 6 }}>
             {/* ── Top row ── */}
             <div className="flex gap-1.5 overflow-hidden" style={{ flex: '0 0 55%' }}>
-              {/* Left: Habit Tracker */}
               <div style={{ flex: '0 0 21%' }} className="overflow-hidden">
                 <HabitTracker />
               </div>
-
-              {/* Center: Brain Dump */}
               <div style={{ flex: '1 1 0%' }} className="overflow-hidden">
                 <BrainDump
                   brainItems={brainItems}
@@ -43,8 +48,6 @@ export default function App() {
                   setMustTodos={setMustTodos}
                 />
               </div>
-
-              {/* Right: Timebox */}
               <div style={{ flex: '0 0 28%' }} className="overflow-hidden">
                 <Timebox
                   timeboxBlocks={timeboxBlocks}
@@ -58,10 +61,10 @@ export default function App() {
             {/* ── Bottom row ── */}
             <div className="flex gap-1.5 overflow-hidden" style={{ flex: '1 1 0%' }}>
               <div style={{ flex: '0 0 44%' }} className="overflow-hidden">
-                <IdeaCoverflow ideas={ideas} />
+                <IdeaCoverflow ideas={ideas} categories={categories} />
               </div>
               <div style={{ flex: '1 1 0%' }} className="overflow-hidden">
-                <IdeaList ideas={ideas} setIdeas={setIdeas} />
+                <IdeaList ideas={ideas} setIdeas={setIdeas} categories={categories} setCategories={setCategories} />
               </div>
             </div>
           </div>

@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { Info } from 'lucide-react'
 
-const TYPE_CARD = {
-  '영화': { accent: '#ff3b30', bg: '#1c0806' },
-  '음악': { accent: '#5856d6', bg: '#0c0b1e' },
-  '드라마': { accent: '#ff2d55', bg: '#1c080e' },
-  '책':   { accent: '#34c759', bg: '#081c0c' },
-  '만화': { accent: '#ff9500', bg: '#1c1006' },
+// accent 색에서 어두운 bg 색 자동 계산
+function accentToBg(hex) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgb(${Math.round(r * 0.11)},${Math.round(g * 0.11)},${Math.round(b * 0.11)})`
 }
 
-function getCardStyle(type) {
-  return TYPE_CARD[type] || { accent: '#aeaeb2', bg: '#141418' }
+function getCardStyle(type, categories) {
+  const cat = (categories || []).find(c => c.name === type)
+  if (!cat) return { accent: '#aeaeb2', bg: '#141418' }
+  return { accent: cat.color, bg: accentToBg(cat.color) }
 }
 
 function normalizeCreators(creators) {
@@ -46,14 +48,14 @@ function getOpacity(dist) {
 }
 
 // ── 커버 카드 ─────────────────────────────────────────────
-function CoverCard({ idea, position, onClick, isFlipped }) {
+function CoverCard({ idea, position, onClick, isFlipped, categories }) {
   const abs = Math.abs(position)
   const scale = getScale(abs)
   const translateX = position * 112
   const rotateY = position * -34
   const zIndex = Math.max(0, Math.round(10 - abs))
   const opacity = getOpacity(abs)
-  const cs = getCardStyle(idea.type)
+  const cs = getCardStyle(idea.type, categories)
   const creators = normalizeCreators(idea.creators)
   const grouped = groupCreators(creators)
   const isFocused = abs < 0.5
@@ -142,7 +144,7 @@ function CoverCard({ idea, position, onClick, isFlipped }) {
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function IdeaCoverflow({ ideas }) {
+export default function IdeaCoverflow({ ideas, categories }) {
   const [flipped, setFlipped] = useState(false)
   // displayPos: 소수점 포지션 (0.0 ~ ideas.length-1), 렌더링 구동
   const [displayPos, setDisplayPos] = useState(0)
@@ -247,7 +249,7 @@ export default function IdeaCoverflow({ ideas }) {
 
   const safeActive = Math.max(0, Math.min(ideas.length - 1, activeIdx))
   const active = ideas[safeActive]
-  const cs = getCardStyle(active.type)
+  const cs = getCardStyle(active.type, categories)
   const activeCreators = normalizeCreators(active.creators)
 
   const creatorSummary = (() => {
@@ -309,6 +311,7 @@ export default function IdeaCoverflow({ ideas }) {
             position={idx - displayPos}
             onClick={() => handleCardClick(idx)}
             isFlipped={flipped && idx === safeActive}
+            categories={categories}
           />
         ))}
         <div
