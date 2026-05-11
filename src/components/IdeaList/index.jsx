@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useId } from 'react'
 import { Plus, X, Trash2, FileText, ImagePlus, Settings } from 'lucide-react'
 
 const PRESET_ROLES = ['감독', '작가', '배우', '가수', 'PD', '기타']
@@ -265,6 +265,7 @@ function CreatorsField({ value, onChange }) {
 
 // ── 별점 컴포넌트 (0.5 단위) ──────────────────────────────
 function StarRating({ value = 0, onChange, size = 14, readonly = false }) {
+  const uid = useId()
   const [hoverVal, setHoverVal] = useState(null)
   const display = hoverVal !== null ? hoverVal : value
 
@@ -313,11 +314,11 @@ function StarRating({ value = 0, onChange, size = 14, readonly = false }) {
             {fill !== 'empty' && (
               <svg width={size} height={size} viewBox="0 0 24 24" style={{ position: 'absolute', inset: 0 }}>
                 <defs>
-                  <clipPath id={`sp-${i}-${size}`}>
+                  <clipPath id={`sp-${uid}-${i}`}>
                     <rect x="0" y="0" width={fill === 'half' ? '12' : '24'} height="24" />
                   </clipPath>
                 </defs>
-                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="#ff9500" stroke="#ff9500" strokeWidth="2" strokeLinejoin="round" clipPath={`url(#sp-${i}-${size})`} />
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="#ff9500" stroke="#ff9500" strokeWidth="2" strokeLinejoin="round" clipPath={`url(#sp-${uid}-${i})`} />
               </svg>
             )}
           </div>
@@ -642,19 +643,11 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
                     </span>
                   </div>
                   <div onClick={e => e.stopPropagation()}>
-                    {idea.rating > 0 ? (
-                      <StarRating
-                        value={idea.rating}
-                        size={11}
-                        onChange={r => setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, rating: r } : i))}
-                      />
-                    ) : (
-                      <StarRating
-                        value={0}
-                        size={11}
-                        onChange={r => setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, rating: r } : i))}
-                      />
-                    )}
+                    <StarRating
+                      value={idea.rating || 0}
+                      size={11}
+                      onChange={r => setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, rating: r } : i))}
+                    />
                   </div>
                   <span className="text-[10px] text-right" style={{ color: '#aeaeb2' }}>
                     {formatDate(idea.createdAt)}

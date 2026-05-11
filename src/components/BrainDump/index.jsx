@@ -53,7 +53,6 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(item.text)
-  const inputRef = useState(null)
 
   const isInProgress = item.persistedStatus === 'in-progress'
   const isScheduled = !!item.sourceBlockId

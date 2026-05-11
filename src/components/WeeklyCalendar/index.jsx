@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 
 const START_HOUR = 5
 const END_HOUR = 24
@@ -38,7 +38,6 @@ function migrate(block) {
 
 export default function WeeklyCalendar({ timeboxBlocks, setTimeboxBlocks, weekOffset, today }) {
   const dates = getWeekDates(weekOffset)
-  const gridRef = useRef(null)
   const [dragging, setDragging] = useState(null) // { blockId, srcDate, offsetSlot }
   const [dragOver, setDragOver] = useState(null) // { dateKey, slot }
 

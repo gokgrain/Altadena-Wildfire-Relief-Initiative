@@ -116,6 +116,7 @@ export default function HabitTracker({ setBrainItems }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [dropTarget, setDropTarget] = useState(false)
   const inputRef = useRef(null)
+  const dragCounterRef = useRef(0)
 
   useEffect(() => {
     if (adding) inputRef.current?.focus()
@@ -154,15 +155,30 @@ export default function HabitTracker({ setBrainItems }) {
     })
   }
 
-  function handleDragOver(e) {
+  function handleDragEnter(e) {
     if (e.dataTransfer.types.includes('application/brain-item')) {
-      e.preventDefault()
-      e.dataTransfer.dropEffect = 'move'
+      dragCounterRef.current++
       setDropTarget(true)
     }
   }
 
+  function handleDragLeave() {
+    dragCounterRef.current--
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0
+      setDropTarget(false)
+    }
+  }
+
+  function handleDragOver(e) {
+    if (e.dataTransfer.types.includes('application/brain-item')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }
+
   function handleDrop(e) {
+    dragCounterRef.current = 0
     setDropTarget(false)
     const raw = e.dataTransfer.getData('application/brain-item')
     if (!raw) return
@@ -187,8 +203,9 @@ export default function HabitTracker({ setBrainItems }) {
   return (
     <div
       className="panel h-full rounded-lg flex flex-col"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
-      onDragLeave={() => setDropTarget(false)}
       onDrop={handleDrop}
       style={dropTarget ? { outline: '2px dashed #34c75980', outlineOffset: -2 } : undefined}
     >

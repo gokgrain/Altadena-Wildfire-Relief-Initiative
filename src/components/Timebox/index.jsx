@@ -224,12 +224,14 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     setDetailBlock(null)
   }
 
-  function removeBlock(id) {
-    const block = dayBlocks.find(b => b.id === id)
+  function removeBlock(id, fromDate) {
+    const targetDate = fromDate || selectedDate
+    const targetBlocks = (timeboxBlocks[targetDate] || []).map(migrate)
+    const block = targetBlocks.find(b => b.id === id) || dayBlocks.find(b => b.id === id)
 
     setTimeboxBlocks(prev => ({
       ...prev,
-      [selectedDate]: (prev[selectedDate] || []).filter(b => b.id !== id),
+      [targetDate]: (prev[targetDate] || []).filter(b => b.id !== id),
     }))
 
     if (!block) return
@@ -645,7 +647,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
       <BlockDetailModal
         block={detailBlock}
         onSave={saveBlockDetail}
-        onDelete={() => { removeBlock(detailBlock.id); setDetailBlock(null) }}
+        onDelete={() => { removeBlock(detailBlock.id, detailBlock._date); setDetailBlock(null) }}
         onClose={() => setDetailBlock(null)}
       />
     )}
