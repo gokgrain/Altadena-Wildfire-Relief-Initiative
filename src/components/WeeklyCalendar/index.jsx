@@ -26,9 +26,9 @@ function getWeekDates(weekOffset = 0) {
 
 function slotToTime(slot) {
   const mins = slot * 30 + START_HOUR * 60
-  const h = Math.floor(mins / 60)
+  const h = Math.floor(mins / 60) % 24
   const m = mins % 60
-  return `${h}:${m === 0 ? '00' : m}`
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
 function migrate(block) {
@@ -125,7 +125,7 @@ export default function WeeklyCalendar({ timeboxBlocks, setTimeboxBlocks, weekOf
           {Array.from({ length: END_HOUR - START_HOUR }, (_, i) => (
             <div key={i} style={{ position: 'absolute', top: i * 2 * SLOT_H, left: 0, right: 0 }}>
               <span style={{ position: 'absolute', left: 2, top: 0, fontSize: 8, lineHeight: `${SLOT_H}px`, color: '#c7c7cc', fontFamily: 'monospace', userSelect: 'none' }}>
-                {START_HOUR + i}
+                {String(START_HOUR + i).padStart(2, '0')}
               </span>
             </div>
           ))}

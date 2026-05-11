@@ -19,9 +19,9 @@ const STATUS_KEYS = ['todo', 'in-progress', 'done']
 // ── 헬퍼 ──────────────────────────────────────────────────
 function slotToTime(slot) {
   const mins = slot * 30 + START_HOUR * 60
-  const h = Math.floor(mins / 60)
+  const h = Math.floor(mins / 60) % 24
   const m = mins % 60
-  return `${h}:${m === 0 ? '00' : m}`
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
 function getWeekDates(weekOffset = 0) {
@@ -478,7 +478,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                   fontSize: 9, lineHeight: `${SLOT_HEIGHT}px`,
                   color: '#c7c7cc', fontFamily: 'monospace', userSelect: 'none',
                 }}>
-                  {hour}
+                  {String(hour).padStart(2, '0')}
                 </span>
                 <div style={{ position: 'absolute', left: 34, right: 4, top: 0, height: 1, background: '#00000008' }} />
                 <div style={{ position: 'absolute', left: 34, right: 4, top: SLOT_HEIGHT, height: 1, background: '#00000005' }} />
