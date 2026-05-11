@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Star, GripVertical, X } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Plus, Trash2, Star, GripVertical, X, Scissors } from 'lucide-react'
 
 // ── Must Todo 섹션 (Brain Dump의 must 버튼으로만 추가 가능) ─
 function MustTodoSection({ mustTodos, setMustTodos }) {
@@ -49,13 +49,17 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
 }
 
 // ── Brain Dump 개별 항목 ─────────────────────────────────
-function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
+function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit }) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(item.text)
+  const [splitting, setSplitting] = useState(false)
+  const [splitCount, setSplitCount] = useState('2')
+  const splitInputRef = useRef(null)
 
   const isInProgress = item.persistedStatus === 'in-progress'
   const isScheduled = !!item.sourceBlockId
+  const showActions = hovered || splitting
 
   function commitEdit() {
     const t = editText.trim()
@@ -63,17 +67,38 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
     setEditing(false)
   }
 
+  function openSplit(e) {
+    e.stopPropagation()
+    setSplitCount('2')
+    setSplitting(true)
+    // focus는 렌더 후 input이 마운트된 뒤에
+    setTimeout(() => splitInputRef.current?.focus(), 30)
+  }
+
+  function confirmSplit() {
+    const n = parseInt(splitCount, 10)
+    if (n >= 2 && n <= 20) {
+      onSplit(n)
+    }
+    setSplitting(false)
+  }
+
+  function cancelSplit(e) {
+    e?.stopPropagation()
+    setSplitting(false)
+  }
+
   return (
     <div
-      draggable={!editing}
-      onDragStart={editing ? undefined : onDragStart}
+      draggable={!editing && !splitting}
+      onDragStart={editing || splitting ? undefined : onDragStart}
       className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
-      style={{ background: hovered ? '#00000005' : 'transparent', cursor: editing ? 'default' : 'grab' }}
+      style={{ background: showActions ? '#00000005' : 'transparent', cursor: editing || splitting ? 'default' : 'grab' }}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={() => { setHovered(false) }}
     >
       {/* Drag handle */}
-      <div className="flex-shrink-0 transition-colors" style={{ color: hovered && !editing ? '#aeaeb2' : 'transparent' }}>
+      <div className="flex-shrink-0 transition-colors" style={{ color: hovered && !editing && !splitting ? '#aeaeb2' : 'transparent' }}>
         <GripVertical size={13} />
       </div>
 
@@ -103,7 +128,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
       )}
 
       {/* 배지: 타임박스 배치중 */}
-      {isScheduled && (
+      {isScheduled && !splitting && (
         <span
           className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
           style={{ background: '#5856d610', color: '#5856d6', border: '1px solid #5856d625' }}
@@ -113,7 +138,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
       )}
 
       {/* 배지: 진행중 */}
-      {isInProgress && (
+      {isInProgress && !splitting && (
         <span
           className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
           style={{ background: '#ff950015', color: '#ff9500', border: '1px solid #ff950025' }}
@@ -122,8 +147,54 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
         </span>
       )}
 
-      {/* Hover 액션 */}
-      {hovered && (
+      {/* ── 쪼개기 입력 UI ── */}
+      {splitting && (
+        <div
+          className="flex items-center gap-1 flex-shrink-0"
+          onDragStart={e => e.preventDefault()}
+          onClick={e => e.stopPropagation()}
+        >
+          <span style={{ fontSize: 9, color: '#aeaeb2', whiteSpace: 'nowrap' }}>몇 분할?</span>
+          <input
+            ref={splitInputRef}
+            type="number"
+            min={2}
+            max={20}
+            value={splitCount}
+            onChange={e => setSplitCount(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') confirmSplit()
+              if (e.key === 'Escape') cancelSplit()
+              e.stopPropagation()
+            }}
+            style={{
+              width: 38, fontSize: 11, fontWeight: 700, textAlign: 'center',
+              color: '#1d1d1f', background: '#f5f5f7',
+              border: '1px solid #5856d640', borderRadius: 5,
+              outline: 'none', padding: '2px 4px', fontFamily: 'inherit',
+            }}
+          />
+          <button
+            onClick={confirmSplit}
+            style={{
+              fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 5,
+              background: '#5856d6', color: '#fff', border: 'none', cursor: 'pointer',
+            }}
+          >
+            확인
+          </button>
+          <button
+            onClick={cancelSplit}
+            className="icon-btn"
+            style={{ color: '#aeaeb2', flexShrink: 0 }}
+          >
+            <X size={10} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Hover 액션 (쪼개기 UI가 없을 때만) ── */}
+      {showActions && !splitting && (
         <div className="flex items-center gap-1 flex-shrink-0" onDragStart={e => e.preventDefault()}>
           <button
             onClick={onMust}
@@ -137,6 +208,19 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit }) {
           >
             <Star size={9} fill={item.isMust ? '#5856d6' : 'none'} />
             must
+          </button>
+          <button
+            onClick={openSplit}
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
+            style={{
+              background: '#00000008',
+              color: '#86868b',
+              border: '1px solid #00000012',
+            }}
+            title="여러 조각으로 쪼개기"
+          >
+            <Scissors size={9} />
+            쪼개기
           </button>
           <button
             onClick={onDelete}
@@ -200,6 +284,35 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
     setMustTodos(prev => prev.filter(t => t.sourceId !== lookupId))
   }
 
+  // ── 쪼개기: 원본 항목을 n개의 독립적인 새 항목으로 교체 ──
+  function splitItem(id, count) {
+    const item = brainItems.find(i => i.id === id)
+    if (!item) return
+
+    const now = Date.now()
+    const splitItems = Array.from({ length: count }, (_, i) => ({
+      id: `bd${now}_${i}`,
+      text: `${item.text} (${i + 1}/${count})`,
+      isMust: false,
+      persistedStatus: 'none',
+      createdAt: new Date(now + i).toISOString(),
+    }))
+
+    // 원본이 must였다면 must todo도 제거
+    const lookupId = item.mustSourceId || id
+    if (item.isMust) {
+      setMustTodos(prev => prev.filter(t => t.sourceId !== lookupId))
+    }
+
+    // 원본 위치에 쪼개진 항목들 삽입
+    setBrainItems(prev => {
+      const idx = prev.findIndex(i => i.id === id)
+      const next = [...prev]
+      next.splice(idx, 1, ...splitItems)
+      return next
+    })
+  }
+
   function handleDragStart(e, item) {
     e.dataTransfer.setData('application/brain-item', JSON.stringify({
       id: item.id,
@@ -250,6 +363,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
             onDelete={() => deleteItem(item.id)}
             onDragStart={e => handleDragStart(e, item)}
             onEdit={newText => editItem(item.id, newText)}
+            onSplit={count => splitItem(item.id, count)}
           />
         ))}
       </div>
