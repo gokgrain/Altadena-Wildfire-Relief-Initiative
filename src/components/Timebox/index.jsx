@@ -185,6 +185,8 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
   const [movingBlockId, setMovingBlockId] = useState(null)
   const movingOffsetSlot = useRef(0)
   const containerRef = useRef(null)
+  const dragCounterRef = useRef(0)
+  const dragOverSlotRef = useRef(null)
 
   const selectedDate = dateKey(dates[selectedDay])
   const dayBlocks = (timeboxBlocks[selectedDate] || []).map(migrate)
@@ -322,12 +324,36 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
   }
 
   // ── 드래그 오버 ──────────────────────────────────────────
+  function calcSlot(clientY) {
+    if (!containerRef.current) return 0
+    const rect = containerRef.current.getBoundingClientRect()
+    const y = clientY - rect.top + containerRef.current.scrollTop
+    return Math.max(0, Math.min(TOTAL_SLOTS - 1, Math.floor(y / SLOT_HEIGHT)))
+  }
+
+  function handleDragEnter(e) {
+    e.preventDefault()
+    dragCounterRef.current += 1
+    if (dragCounterRef.current === 1) {
+      const slot = calcSlot(e.clientY)
+      dragOverSlotRef.current = slot
+      setDragOverSlot(slot)
+    }
+  }
+
   function handleDragOver(e) {
     e.preventDefault()
-    if (!containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const y = e.clientY - rect.top + containerRef.current.scrollTop
-    setDragOverSlot(Math.max(0, Math.min(TOTAL_SLOTS - 1, Math.floor(y / SLOT_HEIGHT))))
+    const slot = calcSlot(e.clientY)
+    dragOverSlotRef.current = slot
+    setDragOverSlot(slot)
+  }
+
+  function handleDragLeave(e) {
+    dragCounterRef.current -= 1
+    if (dragCounterRef.current === 0) {
+      dragOverSlotRef.current = null
+      setDragOverSlot(null)
+    }
   }
 
   // ── 타임박스 내 블록 이동 드래그 ────────────────────────
@@ -348,7 +374,9 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
   // ── 드롭 처리 ────────────────────────────────────────────
   function handleDrop(e) {
     e.preventDefault()
-    const slot = dragOverSlot ?? 0
+    dragCounterRef.current = 0
+    const slot = calcSlot(e.clientY)
+    dragOverSlotRef.current = null
     setDragOverSlot(null)
 
     // 1) 타임박스 내 블록 이동
@@ -461,9 +489,10 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         ref={containerRef}
         className="flex-1 overflow-y-auto"
         style={{ position: 'relative' }}
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onDragLeave={() => setDragOverSlot(null)}
+        onDragLeave={handleDragLeave}
       >
         <div style={{ height: TOTAL_SLOTS * SLOT_HEIGHT, position: 'relative' }}>
 
