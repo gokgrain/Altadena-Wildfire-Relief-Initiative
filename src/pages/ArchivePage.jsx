@@ -67,9 +67,6 @@ function IdeaDetail({ idea, categories }) {
         )}
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {idea.image && (
-          <img src={idea.image} alt={idea.title} style={{ width: '100%', maxHeight: 110, objectFit: 'cover', borderRadius: 8 }} />
-        )}
         {idea.oneliner && (
           <p style={{ fontSize: 12, fontStyle: 'italic', color: '#5856d6', lineHeight: 1.65, borderLeft: `2px solid ${accent}50`, paddingLeft: 10, margin: 0 }}>
             "{idea.oneliner}"
