@@ -117,12 +117,12 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
     <div>
       {/* 메인 행 */}
       <div
-        draggable={!editing && !splitting && !isPlaced}
-        onDragStart={editing || splitting || isPlaced ? undefined : onDragStart}
+        draggable={!editing && !splitting && !isScheduled}
+        onDragStart={editing || splitting || isScheduled ? undefined : onDragStart}
         className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
         style={{
           background: showActions ? '#00000005' : 'transparent',
-          cursor: editing || splitting || isPlaced ? 'default' : 'grab',
+          cursor: editing || splitting || isScheduled ? 'default' : 'grab',
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -130,7 +130,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
         {/* 드래그 핸들 */}
         <div
           className="flex-shrink-0 transition-colors"
-          style={{ color: hovered && !editing && !splitting && !isPlaced ? '#aeaeb2' : 'transparent' }}
+          style={{ color: hovered && !editing && !splitting && !isScheduled ? '#aeaeb2' : 'transparent' }}
         >
           <GripVertical size={13} />
         </div>
