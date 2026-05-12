@@ -198,9 +198,9 @@ function MonthlyCalendar({ year, month, timeboxBlocks }) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1.5, overflow: 'hidden', flex: 1 }}>
                 {blocks.slice(0, 4).map(block => (
-                  <div key={block.id} style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0 }}>
-                    <div style={{ width: 4, height: 4, borderRadius: 2, flexShrink: 0, background: STATUS_COLOR[block.status] || '#c7c7cc' }} />
-                    <span style={{ fontSize: 8, color: '#86868b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, lineHeight: 1.3 }}>
+                  <div key={block.id} style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, borderLeft: `2px solid ${block.color || STATUS_COLOR[block.status] || '#c7c7cc'}`, background: (block.color || '#c7c7cc') + '18', borderRadius: '0 2px 2px 0', paddingLeft: 2, paddingRight: 2 }}>
+                    <div style={{ width: 4, height: 4, borderRadius: '50%', flexShrink: 0, background: STATUS_COLOR[block.status] || '#c7c7cc' }} />
+                    <span style={{ fontSize: 8, color: block.status === 'done' ? '#aeaeb2' : '#1d1d1f', textDecoration: block.status === 'done' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, lineHeight: 1.4 }}>
                       {block.text}
                     </span>
                   </div>
@@ -360,7 +360,17 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
         <div className="panel rounded-lg" style={{ flex: '0 0 44%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div className="panel-header">
             <span className="panel-title">월별 캘린더</span>
-            <span style={{ fontSize: 9, color: '#aeaeb2' }}>● 완료 ● 진행중 ● 미완료</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 9 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#86868b' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34c759', display: 'inline-block' }} />완료
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#86868b' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff9500', display: 'inline-block' }} />진행중
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#86868b' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff3b30', display: 'inline-block' }} />미완료
+              </span>
+            </div>
           </div>
           <div style={{ flex: 1, overflow: 'hidden', padding: '0 2px 2px' }}>
             <MonthlyCalendar year={year} month={month} timeboxBlocks={timeboxBlocks} />

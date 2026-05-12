@@ -73,6 +73,45 @@ function migrate(block) {
   }
 }
 
+// Google Calendar-style overlap layout
+function layoutBlocks(blocks) {
+  if (!blocks.length) return {}
+  const sorted = [...blocks].sort((a, b) => a.startSlot - b.startSlot)
+  const colEnds = []
+  const colOf = {}
+
+  for (const block of sorted) {
+    const end = block.startSlot + block.durationSlots
+    let col = colEnds.findIndex(e => e <= block.startSlot)
+    if (col === -1) { col = colEnds.length; colEnds.push(end) }
+    else colEnds[col] = end
+    colOf[block.id] = col
+  }
+
+  const totalOf = {}
+  for (const block of sorted) {
+    const end = block.startSlot + block.durationSlots
+    const concurrent = sorted.filter(b =>
+      b.startSlot < end && b.startSlot + b.durationSlots > block.startSlot
+    )
+    totalOf[block.id] = Math.max(...concurrent.map(b => colOf[b.id])) + 1
+  }
+
+  return Object.fromEntries(sorted.map(b => [b.id, { col: colOf[b.id], total: totalOf[b.id] }]))
+}
+
+// Block position within timebox area (left: 38px, right: 4px = 42px total fixed)
+function blockPos(col, total) {
+  const w_pct = 100 / total
+  const w_px = -(41 + total) / total
+  const l_pct = (col / total) * 100
+  const l_px = 38 - col * 41 / total
+  return {
+    left: `calc(${l_pct.toFixed(2)}% + ${l_px.toFixed(2)}px)`,
+    width: `calc(${w_pct.toFixed(2)}% + ${w_px.toFixed(2)}px)`,
+  }
+}
+
 // ── 블록 상세 편집 팝업 ────────────────────────────────────
 function BlockDetailModal({ block, onSave, onDelete, onClose }) {
   const startMins = block.startSlot * 30 + START_HOUR * 60
@@ -190,6 +229,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
 
   const selectedDate = dateKey(dates[selectedDay])
   const dayBlocks = (timeboxBlocks[selectedDate] || []).map(migrate)
+  const blockLayout = layoutBlocks(dayBlocks)
 
   // ── 블록 저장 ────────────────────────────────────────────
   function saveBlock(block) {
@@ -523,7 +563,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                 style={{
                   position: 'absolute',
                   top: block.startSlot * SLOT_HEIGHT + 1,
-                  left: 38, right: 4,
+                  ...blockPos(blockLayout[block.id]?.col ?? 0, blockLayout[block.id]?.total ?? 1),
                   height: blockH,
                   background: block.color + '14',
                   borderLeft: `3px solid ${block.color}`,
