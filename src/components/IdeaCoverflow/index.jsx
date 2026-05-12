@@ -35,10 +35,10 @@ function lerp(a, b, t) {
 }
 
 function getScale(dist) {
-  if (dist <= 0) return 1
-  if (dist <= 1) return lerp(1, 0.78, dist)
-  if (dist <= 2) return lerp(0.78, 0.61, dist - 1)
-  return lerp(0.61, 0.48, Math.min(dist - 2, 1))
+  if (dist <= 0) return 1.0
+  if (dist <= 1) return lerp(1.0, 0.67, dist)
+  if (dist <= 2) return lerp(0.67, 0.50, dist - 1)
+  return lerp(0.50, 0.40, Math.min(dist - 2, 1))
 }
 
 function getOpacity(dist) {
@@ -143,7 +143,7 @@ function CoverCard({ idea, position, onClick, isFlipped, categories }) {
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function IdeaCoverflow({ ideas, categories }) {
+export default function IdeaCoverflow({ ideas, categories, onActiveChange }) {
   const [flipped, setFlipped] = useState(false)
   // displayPos: 소수점 포지션 (0.0 ~ ideas.length-1), 렌더링 구동
   const [displayPos, setDisplayPos] = useState(0)
@@ -167,6 +167,12 @@ export default function IdeaCoverflow({ ideas, categories }) {
       setActiveIdx(clamped)
     }
   }, [ideas])
+
+  useEffect(() => {
+    if (!onActiveChange || !ideas?.length) return
+    const idx = Math.max(0, Math.min(ideas.length - 1, activeIdx))
+    onActiveChange(ideas[idx])
+  }, [activeIdx, ideas])
 
   useEffect(() => {
     const el = containerRef.current
