@@ -141,6 +141,7 @@ export default function App() {
                     mustTodos={mustTodos}
                     setMustTodos={setMustTodos}
                     timeboxBlocks={timeboxBlocks}
+                    setTimeboxBlocks={setTimeboxBlocks}
                   />
                 </div>
               </div>

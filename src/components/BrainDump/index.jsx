@@ -160,7 +160,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
           <span
             className="text-xs flex-1 min-w-0 truncate"
             style={{ color: isPlaced ? '#aeaeb2' : '#86868b' }}
-            onDoubleClick={!isPlaced ? () => { setEditText(item.text); setEditing(true) } : undefined}
+            onDoubleClick={() => { setEditText(item.text); setEditing(true) }}
           >
             {item.text}
           </span>
@@ -302,7 +302,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMustTodos, timeboxBlocks }) {
+export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMustTodos, timeboxBlocks, setTimeboxBlocks }) {
   const [inputText, setInputText] = useState('')
   const inputRef = useRef(null)
 
@@ -341,6 +341,15 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
 
   function editItem(id, newText) {
     setBrainItems(prev => prev.map(i => i.id === id ? { ...i, text: newText } : i))
+    if (setTimeboxBlocks) {
+      setTimeboxBlocks(prev => {
+        const updated = { ...prev }
+        for (const [date, blocks] of Object.entries(updated)) {
+          updated[date] = (blocks || []).map(b => b.sourceId === id ? { ...b, text: newText } : b)
+        }
+        return updated
+      })
+    }
   }
 
   function deleteItem(id) {

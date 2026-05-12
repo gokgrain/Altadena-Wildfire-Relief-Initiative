@@ -250,7 +250,6 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     delete updatedBlock._date
 
     if (newDate && newDate !== srcDate) {
-      // 다른 날짜로 이동
       setTimeboxBlocks(prev => {
         const srcList = (prev[srcDate] || []).filter(b => b.id !== block.id)
         const tgtList = [...(prev[newDate] || []).map(migrate), updatedBlock]
@@ -263,6 +262,12 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         return { ...prev, [srcDate]: idx >= 0 ? list.map(b => b.id === block.id ? updatedBlock : b) : [...list, updatedBlock] }
       })
     }
+
+    // 이름이 바뀐 경우 브레인 덤프도 동기화
+    if (updatedBlock.text !== detailBlock?.text && updatedBlock.sourceId) {
+      setBrainItems(prev => prev.map(bi => bi.id === updatedBlock.sourceId ? { ...bi, text: updatedBlock.text } : bi))
+    }
+
     setDetailBlock(null)
   }
 
@@ -590,9 +595,23 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                       autoFocus
                       value={editingText}
                       onChange={e => setEditingText(e.target.value)}
-                      onBlur={() => { saveBlock({ ...block, text: editingText.trim() || block.text }); setEditingBlockId(null) }}
+                      onBlur={() => {
+                        const newText = editingText.trim() || block.text
+                        saveBlock({ ...block, text: newText })
+                        if (newText !== block.text && block.sourceId) {
+                          setBrainItems(prev => prev.map(bi => bi.id === block.sourceId ? { ...bi, text: newText } : bi))
+                        }
+                        setEditingBlockId(null)
+                      }}
                       onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) { saveBlock({ ...block, text: editingText.trim() || block.text }); setEditingBlockId(null) }
+                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                          const newText = editingText.trim() || block.text
+                          saveBlock({ ...block, text: newText })
+                          if (newText !== block.text && block.sourceId) {
+                            setBrainItems(prev => prev.map(bi => bi.id === block.sourceId ? { ...bi, text: newText } : bi))
+                          }
+                          setEditingBlockId(null)
+                        }
                         if (e.key === 'Escape') setEditingBlockId(null)
                         e.stopPropagation()
                       }}
