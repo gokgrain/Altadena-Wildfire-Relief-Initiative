@@ -112,7 +112,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit }) {
           value={editText}
           onChange={e => setEditText(e.target.value)}
           onBlur={commitEdit}
-          onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') { setEditText(item.text); setEditing(false) } }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit(); if (e.key === 'Escape') { setEditText(item.text); setEditing(false) } }}
           className="text-xs flex-1 min-w-0 bg-transparent outline-none"
           style={{ color: '#1d1d1f', borderBottom: '1px solid #5856d640' }}
           onClick={e => e.stopPropagation()}
@@ -163,7 +163,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit }) {
             value={splitCount}
             onChange={e => setSplitCount(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter') confirmSplit()
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) confirmSplit()
               if (e.key === 'Escape') cancelSplit()
               e.stopPropagation()
             }}
@@ -377,7 +377,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
           ref={inputRef}
           value={inputText}
           onChange={e => setInputText(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') addItem() }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addItem() }}
           placeholder="할 일을 입력하고 Enter..."
           className="flex-1 bg-transparent text-xs outline-none"
           style={{ color: '#86868b' }}

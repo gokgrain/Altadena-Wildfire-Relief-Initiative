@@ -145,7 +145,7 @@ function CategoryModal({ categories, setCategories, ideas, onClose }) {
             <input
               value={newName}
               onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addCategory() }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addCategory() }}
               placeholder="카테고리 이름 입력 후 Enter"
               style={{ flex: 1, fontSize: 13, color: '#1d1d1f', padding: '7px 10px', borderRadius: 8, border: `1px solid ${newName.trim() && categories.some(c => c.name === newName.trim()) ? '#ff3b3060' : '#0000000f'}`, background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
             />
@@ -226,7 +226,7 @@ function CreatorsField({ value, onChange }) {
         <input
           value={nameInput}
           onChange={e => setNameInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') add() }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) add() }}
           placeholder={`${finalRole || '역할 선택 후'} 이름 입력 후 Enter`}
           style={{ flex: 1, fontSize: 12, color: '#1d1d1f', padding: '7px 10px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
         />

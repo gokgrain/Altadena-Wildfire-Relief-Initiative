@@ -580,7 +580,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                       onChange={e => setEditingText(e.target.value)}
                       onBlur={() => { saveBlock({ ...block, text: editingText.trim() || block.text }); setEditingBlockId(null) }}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') { saveBlock({ ...block, text: editingText.trim() || block.text }); setEditingBlockId(null) }
+                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) { saveBlock({ ...block, text: editingText.trim() || block.text }); setEditingBlockId(null) }
                         if (e.key === 'Escape') setEditingBlockId(null)
                         e.stopPropagation()
                       }}

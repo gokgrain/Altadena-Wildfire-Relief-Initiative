@@ -290,7 +290,7 @@ export default function HabitTracker({ setBrainItems }) {
               value={newName}
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => {
-                if (e.key === 'Enter') addHabit()
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) addHabit()
                 if (e.key === 'Escape') { setAdding(false); setNewName('') }
               }}
               onBlur={addHabit}
