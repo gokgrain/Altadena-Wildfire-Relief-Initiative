@@ -140,6 +140,7 @@ export default function App() {
                     setBrainItems={setBrainItems}
                     mustTodos={mustTodos}
                     setMustTodos={setMustTodos}
+                    timeboxBlocks={timeboxBlocks}
                   />
                 </div>
               </div>

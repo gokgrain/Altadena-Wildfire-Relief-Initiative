@@ -1,7 +1,29 @@
 import { useState, useRef } from 'react'
 import { Plus, Trash2, Star, GripVertical, X, Scissors } from 'lucide-react'
 
-// ── Must Todo 섹션 (Brain Dump의 must 버튼으로만 추가 가능) ─
+const START_HOUR = 5
+
+function slotToTime(slot) {
+  const mins = slot * 30 + START_HOUR * 60
+  const h = Math.floor(mins / 60) % 24
+  const m = mins % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function formatScheduleDate(dateKey) {
+  if (!dateKey) return ''
+  const [y, m, d] = dateKey.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const days = ['일', '월', '화', '수', '목', '금', '토']
+  return `${m}월 ${d}일 (${days[date.getDay()]})`
+}
+
+function migrateBlock(block) {
+  if (block.startSlot !== undefined) return block
+  return { ...block, startSlot: block.hour !== undefined ? (block.hour - START_HOUR) * 2 : 0, durationSlots: block.duration || 2 }
+}
+
+// ── Must Todo 섹션 ─────────────────────────────────────────
 function MustTodoSection({ mustTodos, setMustTodos }) {
   return (
     <div className="flex-shrink-0 px-3 pt-2.5 pb-2" style={{ maxHeight: '38%', overflowY: 'auto' }}>
@@ -49,17 +71,23 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
 }
 
 // ── Brain Dump 개별 항목 ─────────────────────────────────
-function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit }) {
+function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, placement }) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(item.text)
   const [splitting, setSplitting] = useState(false)
   const [splitCount, setSplitCount] = useState('2')
+  const [showInfo, setShowInfo] = useState(false)
   const splitInputRef = useRef(null)
 
+  const isScheduled = item.persistedStatus === 'todo'
   const isInProgress = item.persistedStatus === 'in-progress'
-  const isScheduled = !!item.sourceBlockId
+  const isPlaced = isScheduled || isInProgress
   const showActions = hovered || splitting
+
+  const badgeStyle = isInProgress
+    ? { bg: '#ff950015', color: '#ff9500', border: '#ff950030' }
+    : { bg: '#5856d610', color: '#5856d6', border: '#5856d630' }
 
   function commitEdit() {
     const t = editText.trim()
@@ -71,15 +99,12 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit }) {
     e.stopPropagation()
     setSplitCount('2')
     setSplitting(true)
-    // focus는 렌더 후 input이 마운트된 뒤에
     setTimeout(() => splitInputRef.current?.focus(), 30)
   }
 
   function confirmSplit() {
     const n = parseInt(splitCount, 10)
-    if (n >= 2 && n <= 20) {
-      onSplit(n)
-    }
+    if (n >= 2 && n <= 20) onSplit(n)
     setSplitting(false)
   }
 
@@ -89,145 +114,186 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit }) {
   }
 
   return (
-    <div
-      draggable={!editing && !splitting}
-      onDragStart={editing || splitting ? undefined : onDragStart}
-      className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
-      style={{ background: showActions ? '#00000005' : 'transparent', cursor: editing || splitting ? 'default' : 'grab' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false) }}
-    >
-      {/* Drag handle */}
-      <div className="flex-shrink-0 transition-colors" style={{ color: hovered && !editing && !splitting ? '#aeaeb2' : 'transparent' }}>
-        <GripVertical size={13} />
+    <div>
+      {/* 메인 행 */}
+      <div
+        draggable={!editing && !splitting && !isPlaced}
+        onDragStart={editing || splitting || isPlaced ? undefined : onDragStart}
+        className="flex items-center gap-2 px-2 py-2 rounded-lg transition-colors duration-100"
+        style={{
+          background: showActions ? '#00000005' : 'transparent',
+          cursor: editing || splitting || isPlaced ? 'default' : 'grab',
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* 드래그 핸들 */}
+        <div
+          className="flex-shrink-0 transition-colors"
+          style={{ color: hovered && !editing && !splitting && !isPlaced ? '#aeaeb2' : 'transparent' }}
+        >
+          <GripVertical size={13} />
+        </div>
+
+        {/* 불릿 */}
+        <div
+          className="w-1 h-1 rounded-full flex-shrink-0"
+          style={{ background: isPlaced ? badgeStyle.color + '60' : '#c7c7cc' }}
+        />
+
+        {/* 텍스트 / 편집 입력 */}
+        {editing ? (
+          <input
+            autoFocus
+            value={editText}
+            onChange={e => setEditText(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit()
+              if (e.key === 'Escape') { setEditText(item.text); setEditing(false) }
+            }}
+            className="text-xs flex-1 min-w-0 bg-transparent outline-none"
+            style={{ color: '#1d1d1f', borderBottom: '1px solid #5856d640' }}
+            onClick={e => e.stopPropagation()}
+          />
+        ) : (
+          <span
+            className="text-xs flex-1 min-w-0 truncate"
+            style={{ color: isPlaced ? '#aeaeb2' : '#86868b' }}
+            onDoubleClick={!isPlaced ? () => { setEditText(item.text); setEditing(true) } : undefined}
+          >
+            {item.text}
+          </span>
+        )}
+
+        {/* 배치 상태 배지 (클릭 시 일정 정보 토글) */}
+        {isPlaced && !splitting && (
+          <button
+            onClick={e => { e.stopPropagation(); setShowInfo(s => !s) }}
+            className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
+            style={{
+              background: badgeStyle.bg,
+              color: badgeStyle.color,
+              border: `1px solid ${badgeStyle.border}`,
+            }}
+            title="타임박스 배치 일정 보기"
+          >
+            {isInProgress ? '진행중' : '배치됨'}
+          </button>
+        )}
+
+        {/* 쪼개기 입력 UI */}
+        {splitting && (
+          <div
+            className="flex items-center gap-1 flex-shrink-0"
+            onDragStart={e => e.preventDefault()}
+            onClick={e => e.stopPropagation()}
+          >
+            <span style={{ fontSize: 9, color: '#aeaeb2', whiteSpace: 'nowrap' }}>몇 분할?</span>
+            <input
+              ref={splitInputRef}
+              type="number"
+              min={2}
+              max={20}
+              value={splitCount}
+              onChange={e => setSplitCount(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) confirmSplit()
+                if (e.key === 'Escape') cancelSplit()
+                e.stopPropagation()
+              }}
+              style={{
+                width: 38, fontSize: 11, fontWeight: 700, textAlign: 'center',
+                color: '#1d1d1f', background: '#f5f5f7',
+                border: '1px solid #5856d640', borderRadius: 5,
+                outline: 'none', padding: '2px 4px', fontFamily: 'inherit',
+              }}
+            />
+            <button
+              onClick={confirmSplit}
+              style={{
+                fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 5,
+                background: '#5856d6', color: '#fff', border: 'none', cursor: 'pointer',
+              }}
+            >
+              확인
+            </button>
+            <button onClick={cancelSplit} className="icon-btn" style={{ color: '#aeaeb2', flexShrink: 0 }}>
+              <X size={10} />
+            </button>
+          </div>
+        )}
+
+        {/* 호버 액션 */}
+        {showActions && !splitting && (
+          <div className="flex items-center gap-1 flex-shrink-0" onDragStart={e => e.preventDefault()}>
+            <button
+              onClick={onMust}
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
+              style={{
+                background: item.isMust ? '#5856d614' : '#00000008',
+                color: item.isMust ? '#5856d6' : '#86868b',
+                border: `1px solid ${item.isMust ? '#5856d635' : '#00000012'}`,
+              }}
+              title="Weekly Must Todo로 추가"
+            >
+              <Star size={9} fill={item.isMust ? '#5856d6' : 'none'} />
+              must
+            </button>
+            {!isPlaced && (
+              <button
+                onClick={openSplit}
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
+                style={{ background: '#00000008', color: '#86868b', border: '1px solid #00000012' }}
+                title="여러 조각으로 쪼개기"
+              >
+                <Scissors size={9} />
+                쪼개기
+              </button>
+            )}
+            <button
+              onClick={onDelete}
+              className="icon-btn opacity-50 hover:opacity-100"
+              style={{ color: '#ff3b30' }}
+            >
+              <Trash2 size={11} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Bullet */}
-      <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#c7c7cc' }} />
-
-      {/* Text / Edit input */}
-      {editing ? (
-        <input
-          autoFocus
-          value={editText}
-          onChange={e => setEditText(e.target.value)}
-          onBlur={commitEdit}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit(); if (e.key === 'Escape') { setEditText(item.text); setEditing(false) } }}
-          className="text-xs flex-1 min-w-0 bg-transparent outline-none"
-          style={{ color: '#1d1d1f', borderBottom: '1px solid #5856d640' }}
-          onClick={e => e.stopPropagation()}
-        />
-      ) : (
-        <span
-          className="text-xs flex-1 min-w-0 truncate"
-          style={{ color: '#86868b' }}
-          onDoubleClick={() => { setEditText(item.text); setEditing(true) }}
-        >
-          {item.text}
-        </span>
-      )}
-
-      {/* 배지: 타임박스 배치중 */}
-      {isScheduled && !splitting && (
-        <span
-          className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
-          style={{ background: '#5856d610', color: '#5856d6', border: '1px solid #5856d625' }}
-        >
-          배치중
-        </span>
-      )}
-
-      {/* 배지: 진행중 */}
-      {isInProgress && !splitting && (
-        <span
-          className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
-          style={{ background: '#ff950015', color: '#ff9500', border: '1px solid #ff950025' }}
-        >
-          진행중
-        </span>
-      )}
-
-      {/* ── 쪼개기 입력 UI ── */}
-      {splitting && (
+      {/* 배치 일정 정보 패널 */}
+      {showInfo && (
         <div
-          className="flex items-center gap-1 flex-shrink-0"
-          onDragStart={e => e.preventDefault()}
-          onClick={e => e.stopPropagation()}
+          style={{
+            margin: '0 8px 4px 26px',
+            padding: '7px 10px',
+            background: isInProgress ? '#ff950008' : '#5856d608',
+            borderLeft: `2px solid ${isInProgress ? '#ff950050' : '#5856d650'}`,
+            borderRadius: '0 6px 6px 0',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 8,
+          }}
         >
-          <span style={{ fontSize: 9, color: '#aeaeb2', whiteSpace: 'nowrap' }}>몇 분할?</span>
-          <input
-            ref={splitInputRef}
-            type="number"
-            min={2}
-            max={20}
-            value={splitCount}
-            onChange={e => setSplitCount(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) confirmSplit()
-              if (e.key === 'Escape') cancelSplit()
-              e.stopPropagation()
-            }}
-            style={{
-              width: 38, fontSize: 11, fontWeight: 700, textAlign: 'center',
-              color: '#1d1d1f', background: '#f5f5f7',
-              border: '1px solid #5856d640', borderRadius: 5,
-              outline: 'none', padding: '2px 4px', fontFamily: 'inherit',
-            }}
-          />
+          {placement ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: 10, color: '#86868b' }}>
+                📅 {formatScheduleDate(placement.date)}
+              </span>
+              <span style={{ fontSize: 10, color: '#86868b' }}>
+                ⏰ {slotToTime(placement.block.startSlot)} – {slotToTime(placement.block.startSlot + placement.block.durationSlots)}
+              </span>
+            </div>
+          ) : (
+            <span style={{ fontSize: 10, color: '#aeaeb2' }}>타임박스 일정 정보 없음</span>
+          )}
           <button
-            onClick={confirmSplit}
-            style={{
-              fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 5,
-              background: '#5856d6', color: '#fff', border: 'none', cursor: 'pointer',
-            }}
+            onClick={() => setShowInfo(false)}
+            style={{ color: '#c7c7cc', lineHeight: 0, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            확인
-          </button>
-          <button
-            onClick={cancelSplit}
-            className="icon-btn"
-            style={{ color: '#aeaeb2', flexShrink: 0 }}
-          >
-            <X size={10} />
-          </button>
-        </div>
-      )}
-
-      {/* ── Hover 액션 (쪼개기 UI가 없을 때만) ── */}
-      {showActions && !splitting && (
-        <div className="flex items-center gap-1 flex-shrink-0" onDragStart={e => e.preventDefault()}>
-          <button
-            onClick={onMust}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
-            style={{
-              background: item.isMust ? '#5856d614' : '#00000008',
-              color: item.isMust ? '#5856d6' : '#86868b',
-              border: `1px solid ${item.isMust ? '#5856d635' : '#00000012'}`,
-            }}
-            title="Weekly Must Todo로 추가"
-          >
-            <Star size={9} fill={item.isMust ? '#5856d6' : 'none'} />
-            must
-          </button>
-          <button
-            onClick={openSplit}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
-            style={{
-              background: '#00000008',
-              color: '#86868b',
-              border: '1px solid #00000012',
-            }}
-            title="여러 조각으로 쪼개기"
-          >
-            <Scissors size={9} />
-            쪼개기
-          </button>
-          <button
-            onClick={onDelete}
-            className="icon-btn opacity-50 hover:opacity-100"
-            style={{ color: '#ff3b30' }}
-          >
-            <Trash2 size={11} />
+            <X size={9} />
           </button>
         </div>
       )}
@@ -236,7 +302,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit }) {
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
-export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMustTodos }) {
+export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMustTodos, timeboxBlocks }) {
   const [inputText, setInputText] = useState('')
   const inputRef = useRef(null)
 
@@ -284,7 +350,6 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
     setMustTodos(prev => prev.filter(t => t.sourceId !== lookupId))
   }
 
-  // ── 쪼개기: 원본 항목을 n개의 독립적인 새 항목으로 교체 ──
   function splitItem(id, count) {
     const item = brainItems.find(i => i.id === id)
     if (!item) return
@@ -298,13 +363,11 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
       createdAt: new Date(now + i).toISOString(),
     }))
 
-    // 원본이 must였다면 must todo도 제거
     const lookupId = item.mustSourceId || id
     if (item.isMust) {
       setMustTodos(prev => prev.filter(t => t.sourceId !== lookupId))
     }
 
-    // 원본 위치에 쪼개진 항목들 삽입
     setBrainItems(prev => {
       const idx = prev.findIndex(i => i.id === id)
       const next = [...prev]
@@ -324,6 +387,16 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
       createdAt: item.createdAt || null,
     }))
     e.dataTransfer.effectAllowed = 'move'
+  }
+
+  // 해당 항목이 배치된 타임박스 블록 위치 조회
+  function findPlacement(item) {
+    if (!item.sourceBlockId) return null
+    for (const [date, blocks] of Object.entries(timeboxBlocks || {})) {
+      const block = (blocks || []).map(migrateBlock).find(b => b.id === item.sourceBlockId)
+      if (block) return { block, date }
+    }
+    return null
   }
 
   return (
@@ -359,6 +432,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
           <BrainItem
             key={item.id}
             item={item}
+            placement={findPlacement(item)}
             onMust={() => toggleMust(item)}
             onDelete={() => deleteItem(item.id)}
             onDragStart={e => handleDragStart(e, item)}

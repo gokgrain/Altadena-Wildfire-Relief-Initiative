@@ -238,20 +238,12 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
 
     if (!block) return
 
-    setBrainItems(prev => {
-      const alreadyExists = prev.some(bi => bi.taskSourceId === block.sourceId)
-      const filtered = prev.filter(bi => bi.sourceBlockId !== id)
-      if (alreadyExists) return filtered
-      return [{
-        id: `bd${Date.now()}`,
-        text: block.text,
-        isMust: block.isMust || false,
-        persistedStatus: 'none',
-        mustSourceId: block.isMust ? block.sourceId : undefined,
-        taskSourceId: block.sourceId,
-        createdAt: new Date().toISOString(),
-      }, ...filtered]
-    })
+    // 타임박스에서 삭제하면 브레인 덤프 항목을 미배치 상태로 복원
+    setBrainItems(prev => prev.map(bi => bi.id === block.sourceId ? {
+      ...bi,
+      persistedStatus: 'none',
+      sourceBlockId: undefined,
+    } : bi))
   }
 
   // ── 상태 변경 ────────────────────────────────────────────
@@ -259,7 +251,8 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     if (newStatus === 'done') {
       const completedAt = new Date().toISOString()
       saveBlock({ ...block, status: 'done', completedAt })
-      setBrainItems(prev => prev.filter(bi => bi.sourceBlockId !== block.id))
+      // 완료 시에만 브레인 덤프에서 제거
+      setBrainItems(prev => prev.filter(bi => bi.id !== block.sourceId))
       setMustTodos(prev => prev.map(t =>
         t.sourceId === block.sourceId
           ? { ...t, done: true, completedAt, weekKey: getWeekKey(completedAt) }
@@ -270,29 +263,14 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
 
     saveBlock({ ...block, status: newStatus })
 
-    const persistedStatus = newStatus === 'in-progress' ? 'in-progress' : 'none'
-    const mustSourceId = block.isMust ? block.sourceId : undefined
-    const taskSourceId = block.sourceId
+    // 브레인 덤프 항목 상태만 업데이트 (제거하지 않음)
+    const persistedStatus = newStatus === 'in-progress' ? 'in-progress' : 'todo'
+    setBrainItems(prev => prev.map(bi => bi.id === block.sourceId ? {
+      ...bi,
+      persistedStatus,
+      sourceBlockId: block.id,
+    } : bi))
 
-    setBrainItems(prev => {
-      const existingIdx = prev.findIndex(bi =>
-        bi.sourceBlockId === block.id || bi.taskSourceId === taskSourceId
-      )
-      const recreated = {
-        id: existingIdx >= 0 ? prev[existingIdx].id : `bd${Date.now()}`,
-        text: block.text,
-        isMust: block.isMust || false,
-        persistedStatus,
-        sourceBlockId: block.id,
-        mustSourceId,
-        taskSourceId,
-        createdAt: existingIdx >= 0 ? prev[existingIdx].createdAt : new Date().toISOString(),
-      }
-      if (existingIdx >= 0) {
-        return prev.map((bi, i) => i === existingIdx ? recreated : bi)
-      }
-      return [recreated, ...prev]
-    })
   }
 
   // ── 리사이즈 (30분 단위) ─────────────────────────────────
@@ -395,26 +373,15 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
     try {
       const item = JSON.parse(raw)
 
-      let inheritedSourceId = item.mustSourceId || item.id
-      if (item.sourceBlockId) {
-        for (const dateBlocks of Object.values(timeboxBlocks)) {
-          const origBlock = (dateBlocks || []).map(migrate).find(b => b.id === item.sourceBlockId)
-          if (origBlock?.sourceId) {
-            inheritedSourceId = origBlock.sourceId
-            break
-          }
-        }
-      }
-
       const colorIdx = dayBlocks.length % BLOCK_COLORS.length
       const newBlock = {
         id: `tb${Date.now()}`,
         text: item.text,
         startSlot: slot,
         durationSlots: 2,
-        status: item.persistedStatus === 'in-progress' ? 'in-progress' : 'todo',
+        status: 'todo',
         color: BLOCK_COLORS[colorIdx],
-        sourceId: inheritedSourceId,
+        sourceId: item.id,
         isMust: item.isMust || false,
         brainCreatedAt: item.createdAt || null,
         scheduledAt: new Date().toISOString(),
@@ -423,7 +390,12 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
         ...prev,
         [selectedDate]: [...(prev[selectedDate] || []).map(migrate), newBlock],
       }))
-      setBrainItems(prev => prev.filter(bi => bi.id !== item.id))
+      // 브레인 덤프 항목은 유지하고 상태만 '배치됨'으로 업데이트
+      setBrainItems(prev => prev.map(bi => bi.id === item.id ? {
+        ...bi,
+        persistedStatus: 'todo',
+        sourceBlockId: newBlock.id,
+      } : bi))
     } catch { /* ignore */ }
   }
 
