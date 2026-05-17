@@ -1,5 +1,8 @@
 import { useState, useRef, useId } from 'react'
 import { Plus, X, Trash2, FileText, ImagePlus, Settings } from 'lucide-react'
+import { ref, uploadString, getDownloadURL } from 'firebase/storage'
+import { storage } from '../../firebase'
+import { useAuth } from '../../context/AuthContext'
 
 const PRESET_ROLES = ['감독', '작가', '배우', '가수', 'PD', '기타']
 
@@ -509,6 +512,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────
 export default function IdeaList({ ideas, setIdeas, categories, setCategories, activeType: activeTypeProp, setActiveType: setActiveTypeProp }) {
+  const user = useAuth()
   const [localActiveType, setLocalActiveType] = useState('전체')
   // ArchivePage에서 공유 필터를 내려주면 그것을 사용, 아니면 내부 state
   const activeType = activeTypeProp !== undefined ? activeTypeProp : localActiveType
@@ -528,11 +532,25 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
   function openNew() { setModal({ idea: { type: categories[0]?.name || '' } }) }
   function openEdit(idea) { setModal({ idea }) }
 
-  function handleSave(data) {
-    if (data.id) {
-      setIdeas(prev => prev.map(i => i.id === data.id ? data : i))
+  async function handleSave(data) {
+    let savedData = { ...data }
+
+    // If image is base64, upload to Storage and use URL instead
+    if (data.image?.startsWith('data:') && user?.uid) {
+      const ideaId = data.id || `idea_${Date.now()}`
+      try {
+        const storageRef = ref(storage, `users/${user.uid}/ideas/${ideaId}/cover.jpg`)
+        await uploadString(storageRef, data.image, 'data_url')
+        savedData.image = await getDownloadURL(storageRef)
+      } catch (e) {
+        console.warn('Image upload failed, keeping base64:', e)
+      }
+    }
+
+    if (savedData.id) {
+      setIdeas(prev => prev.map(i => i.id === savedData.id ? savedData : i))
     } else {
-      setIdeas(prev => [{ ...data, id: `idea_${Date.now()}`, createdAt: new Date().toISOString() }, ...prev])
+      setIdeas(prev => [{ ...savedData, id: `idea_${Date.now()}`, createdAt: new Date().toISOString() }, ...prev])
     }
     setModal(null)
   }

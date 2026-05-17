@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
-import { useLocalStorage } from './hooks/useLocalStorage'
+import { useFirestoreData } from './hooks/useFirestoreData'
+import { useAuth } from './context/AuthContext'
+import AuthGate from './components/AuthGate'
 import Sidebar from './components/Sidebar'
 import HabitTracker from './components/HabitTracker'
 import BrainDump from './components/BrainDump'
@@ -77,11 +79,14 @@ export default function App() {
   const [page, setPage] = useState('dashboard')
   const [weekOffset, setWeekOffset] = useState(0)
 
-  const [brainItems, setBrainItems] = useLocalStorage('brain-dump', [])
-  const [mustTodos, setMustTodos] = useLocalStorage('must-todos', [])
-  const [timeboxBlocks, setTimeboxBlocks] = useLocalStorage('timebox-blocks', {})
-  const [ideas, setIdeas] = useLocalStorage('ideas', [])
-  const [categories, setCategories] = useLocalStorage('idea-categories', DEFAULT_CATEGORIES)
+  const user = useAuth()
+
+  const [brainItems, setBrainItems, l1] = useFirestoreData('brain-dump', [])
+  const [mustTodos, setMustTodos, l2] = useFirestoreData('must-todos', [])
+  const [timeboxBlocks, setTimeboxBlocks, l3] = useFirestoreData('timebox-blocks', {})
+  const [ideas, setIdeas, l4] = useFirestoreData('ideas', [])
+  const [categories, setCategories, l5] = useFirestoreData('idea-categories', DEFAULT_CATEGORIES)
+  const isLoading = l1 || l2 || l3 || l4 || l5
 
   // 패널 크기 (%)
   const [rightPct, setRightPct] = useState(30)   // Timebox 우측 컬럼 너비
@@ -108,81 +113,88 @@ export default function App() {
   }
 
   return (
-    <div
-      className="flex h-screen w-screen overflow-hidden"
-      style={{ background: '#f5f5f7' }}
-    >
-      <Sidebar page={page} setPage={setPage} />
+    <AuthGate>
+      <div
+        className="flex h-screen w-screen overflow-hidden"
+        style={{ background: '#f5f5f7' }}
+      >
+        <Sidebar page={page} setPage={setPage} user={user} />
 
-      <div className="flex-1 overflow-hidden" style={{ padding: 6 }}>
-        {page === 'dashboard' ? (
-          <div ref={containerRef} className="flex h-full overflow-hidden">
+        <div className="flex-1 overflow-hidden" style={{ padding: 6 }}>
+          {isLoading ? (
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 24, height: 24, border: '2.5px solid #5856d620', borderTop: '2.5px solid #5856d6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+            </div>
+          ) : page === 'dashboard' ? (
+            <div ref={containerRef} className="flex h-full overflow-hidden">
 
-            {/* ── 좌측 컬럼 ── */}
-            <div
-              className="flex flex-col overflow-hidden"
-              style={{ width: `${100 - rightPct}%`, flexShrink: 0 }}
-            >
-              {/* 상단: HabitTracker + BrainDump */}
+              {/* ── 좌측 컬럼 ── */}
               <div
-                className="flex overflow-hidden"
-                style={{ height: `${topPct}%`, flexShrink: 0 }}
+                className="flex flex-col overflow-hidden"
+                style={{ width: `${100 - rightPct}%`, flexShrink: 0 }}
               >
-                <div style={{ width: `${habitPct}%`, flexShrink: 0 }} className="overflow-hidden">
-                  <HabitTracker setBrainItems={setBrainItems} />
+                {/* 상단: HabitTracker + BrainDump */}
+                <div
+                  className="flex overflow-hidden"
+                  style={{ height: `${topPct}%`, flexShrink: 0 }}
+                >
+                  <div style={{ width: `${habitPct}%`, flexShrink: 0 }} className="overflow-hidden">
+                    <HabitTracker setBrainItems={setBrainItems} />
+                  </div>
+
+                  <ResizeHandle direction="col" onDrag={handleHabitResize} />
+
+                  <div className="flex-1 overflow-hidden">
+                    <BrainDump
+                      brainItems={brainItems}
+                      setBrainItems={setBrainItems}
+                      mustTodos={mustTodos}
+                      setMustTodos={setMustTodos}
+                      timeboxBlocks={timeboxBlocks}
+                      setTimeboxBlocks={setTimeboxBlocks}
+                    />
+                  </div>
                 </div>
 
-                <ResizeHandle direction="col" onDrag={handleHabitResize} />
+                <ResizeHandle direction="row" onDrag={handleTopResize} />
 
+                {/* 하단: 주간 캘린더 */}
                 <div className="flex-1 overflow-hidden">
-                  <BrainDump
-                    brainItems={brainItems}
-                    setBrainItems={setBrainItems}
-                    mustTodos={mustTodos}
-                    setMustTodos={setMustTodos}
+                  <WeeklyCalendar
                     timeboxBlocks={timeboxBlocks}
                     setTimeboxBlocks={setTimeboxBlocks}
+                    weekOffset={weekOffset}
+                    today={today}
                   />
                 </div>
               </div>
 
-              <ResizeHandle direction="row" onDrag={handleTopResize} />
+              <ResizeHandle direction="col" onDrag={handleRightResize} />
 
-              {/* 하단: 주간 캘린더 */}
-              <div className="flex-1 overflow-hidden">
-                <WeeklyCalendar
+              {/* ── 우측: Timebox ── */}
+              <div
+                className="overflow-hidden"
+                style={{ width: `${rightPct}%`, flexShrink: 0 }}
+              >
+                <Timebox
                   timeboxBlocks={timeboxBlocks}
                   setTimeboxBlocks={setTimeboxBlocks}
+                  setBrainItems={setBrainItems}
+                  setMustTodos={setMustTodos}
                   weekOffset={weekOffset}
-                  today={today}
+                  setWeekOffset={setWeekOffset}
                 />
               </div>
             </div>
 
-            <ResizeHandle direction="col" onDrag={handleRightResize} />
-
-            {/* ── 우측: Timebox ── */}
-            <div
-              className="overflow-hidden"
-              style={{ width: `${rightPct}%`, flexShrink: 0 }}
-            >
-              <Timebox
-                timeboxBlocks={timeboxBlocks}
-                setTimeboxBlocks={setTimeboxBlocks}
-                setBrainItems={setBrainItems}
-                setMustTodos={setMustTodos}
-                weekOffset={weekOffset}
-                setWeekOffset={setWeekOffset}
-              />
-            </div>
-          </div>
-
-        ) : page === 'archive' ? (
-          <ArchivePage ideas={ideas} setIdeas={setIdeas} categories={categories} setCategories={setCategories} />
-        ) : (
-          <StatsPage timeboxBlocks={timeboxBlocks} mustTodos={mustTodos} />
-        )}
+          ) : page === 'archive' ? (
+            <ArchivePage ideas={ideas} setIdeas={setIdeas} categories={categories} setCategories={setCategories} />
+          ) : (
+            <StatsPage timeboxBlocks={timeboxBlocks} mustTodos={mustTodos} />
+          )}
+        </div>
       </div>
-    </div>
+    </AuthGate>
   )
 }
