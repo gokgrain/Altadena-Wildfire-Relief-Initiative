@@ -33,7 +33,7 @@ function SimpleStars({ value }) {
   return (
     <span style={{ display: 'inline-flex', gap: 1 }}>
       {[0,1,2,3,4].map(i => (
-        <span key={i} style={{ fontSize: 12, color: value >= i+1 ? '#ff9500' : value >= i+0.5 ? '#ffcc00' : '#d1d1d6' }}>★</span>
+        <span key={i} style={{ fontSize: 14, color: value >= i+1 ? '#ff9500' : value >= i+0.5 ? '#ffcc00' : '#d1d1d6' }}>★</span>
       ))}
     </span>
   )
@@ -43,7 +43,7 @@ function IdeaDetail({ idea, categories }) {
   if (!idea) {
     return (
       <div className="panel h-full rounded-lg flex items-center justify-center">
-        <p style={{ fontSize: 11, color: '#c7c7cc' }}>커버를 스크롤해 아이디어를 선택하세요</p>
+        <p style={{ fontSize: 13, color: '#c7c7cc' }}>커버를 스크롤해 아이디어를 선택하세요</p>
       </div>
     )
   }
@@ -57,18 +57,18 @@ function IdeaDetail({ idea, categories }) {
       <div className="panel-header flex-shrink-0">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           <span className="panel-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{idea.title}</span>
-          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: accent + '18', color: accent, flexShrink: 0 }}>{idea.type}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: accent + '18', color: accent, flexShrink: 0 }}>{idea.type}</span>
         </div>
         {idea.rating > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
             <SimpleStars value={idea.rating} />
-            <span style={{ fontSize: 10, color: '#ff9500', fontWeight: 600 }}>{idea.rating.toFixed(1)}</span>
+            <span style={{ fontSize: 12, color: '#ff9500', fontWeight: 600 }}>{idea.rating.toFixed(1)}</span>
           </div>
         )}
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {idea.oneliner && (
-          <p style={{ fontSize: 12, fontStyle: 'italic', color: '#5856d6', lineHeight: 1.65, borderLeft: `2px solid ${accent}50`, paddingLeft: 10, margin: 0 }}>
+          <p style={{ fontSize: 14, fontStyle: 'italic', color: '#5856d6', lineHeight: 1.65, borderLeft: `2px solid ${accent}50`, paddingLeft: 10, margin: 0 }}>
             "{idea.oneliner}"
           </p>
         )}
@@ -76,17 +76,20 @@ function IdeaDetail({ idea, categories }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {Object.entries(grouped).map(([role, names]) => (
               <div key={role} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', width: 28, flexShrink: 0 }}>{role}</span>
-                <span style={{ fontSize: 11, color: '#1d1d1f' }}>{names.join(' · ')}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', width: 28, flexShrink: 0 }}>{role}</span>
+                <span style={{ fontSize: 13, color: '#1d1d1f' }}>{names.join(' · ')}</span>
               </div>
             ))}
           </div>
         )}
         {idea.memo && (
-          <p style={{ fontSize: 12, color: '#86868b', lineHeight: 1.75, whiteSpace: 'pre-wrap', margin: 0 }}>{idea.memo}</p>
+          <div
+            dangerouslySetInnerHTML={{ __html: idea.memo }}
+            style={{ fontSize: 14, color: '#86868b', lineHeight: 1.75, margin: 0 }}
+          />
         )}
         {!idea.oneliner && !hasCreators && !idea.memo && (
-          <p style={{ fontSize: 11, color: '#c7c7cc' }}>상세 정보가 없습니다</p>
+          <p style={{ fontSize: 13, color: '#c7c7cc' }}>상세 정보가 없습니다</p>
         )}
       </div>
     </div>

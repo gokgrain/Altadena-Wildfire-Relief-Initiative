@@ -35,7 +35,7 @@
   }
 
   .panel-title {
-    @apply text-[10px] font-semibold tracking-[0.15em] uppercase;
+    @apply text-[12px] font-semibold tracking-[0.15em] uppercase;
     color: #86868b;
   }
 
@@ -75,6 +75,13 @@
   .streak {
     @apply text-[10px] font-bold tabular-nums;
     color: #ff9500;
+  }
+
+  /* Rich text editor placeholder */
+  [contenteditable][data-placeholder]:empty:before {
+    content: attr(data-placeholder);
+    color: #c7c7cc;
+    pointer-events: none;
   }
 
   /* Timebox row */

@@ -1,4 +1,4 @@
-import { useState, useRef, useId } from 'react'
+import { useState, useRef, useId, useEffect } from 'react'
 import { Plus, X, Trash2, FileText, ImagePlus, Settings } from 'lucide-react'
 import { ref, uploadString, getDownloadURL } from 'firebase/storage'
 import { storage } from '../../firebase'
@@ -88,7 +88,7 @@ function CategoryModal({ categories, setCategories, ideas, onClose }) {
       >
         {/* 헤더 */}
         <div style={{ padding: '15px 20px 12px', borderBottom: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#86868b', letterSpacing: '0.12em', textTransform: 'uppercase' }}>카테고리 관리</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#86868b', letterSpacing: '0.12em', textTransform: 'uppercase' }}>카테고리 관리</span>
           <button onClick={onClose} style={{ color: '#aeaeb2', cursor: 'pointer', lineHeight: 0, background: 'none', border: 'none', padding: 4, borderRadius: 6 }}>
             <X size={16} />
           </button>
@@ -97,7 +97,7 @@ function CategoryModal({ categories, setCategories, ideas, onClose }) {
         {/* 카테고리 목록 */}
         <div style={{ overflowY: 'auto', flex: 1, padding: '10px 16px' }}>
           {categories.length === 0 && (
-            <p style={{ fontSize: 11, color: '#c7c7cc', textAlign: 'center', padding: '16px 0' }}>카테고리가 없습니다</p>
+            <p style={{ fontSize: 13, color: '#c7c7cc', textAlign: 'center', padding: '16px 0' }}>카테고리가 없습니다</p>
           )}
           {categories.map(cat => {
             const count = ideas.filter(i => i.type === cat.name).length
@@ -113,7 +113,7 @@ function CategoryModal({ categories, setCategories, ideas, onClose }) {
                   />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{cat.name}</span>
                   {count > 0 && (
-                    <span style={{ fontSize: 10, color: '#aeaeb2' }}>{count}개</span>
+                    <span style={{ fontSize: 12, color: '#aeaeb2' }}>{count}개</span>
                   )}
                   <button
                     onClick={() => canDelete && deleteCategory(cat.name)}
@@ -137,7 +137,7 @@ function CategoryModal({ categories, setCategories, ideas, onClose }) {
 
         {/* 새 카테고리 추가 */}
         <div style={{ padding: '12px 16px 18px', borderTop: '1px solid #0000000f', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>새 카테고리</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>새 카테고리</span>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
             {COLOR_PALETTE.map(color => (
               <button key={color} onClick={() => setNewColor(color)} style={dotStyle(color, newColor === color)} />
@@ -160,7 +160,7 @@ function CategoryModal({ categories, setCategories, ideas, onClose }) {
             </button>
           </div>
           {newName.trim() && categories.some(c => c.name === newName.trim()) && (
-            <span style={{ fontSize: 10, color: '#ff3b30', marginTop: -4 }}>이미 존재하는 카테고리입니다</span>
+            <span style={{ fontSize: 12, color: '#ff3b30', marginTop: -4 }}>이미 존재하는 카테고리입니다</span>
           )}
         </div>
       </div>
@@ -204,7 +204,7 @@ function CreatorsField({ value, onChange }) {
             key={r}
             onClick={() => setSelectedRole(r)}
             style={{
-              padding: '4px 11px', borderRadius: 20, fontSize: 10, fontWeight: 600,
+              padding: '4px 11px', borderRadius: 20, fontSize: 12, fontWeight: 600,
               border: 'none', cursor: 'pointer', transition: 'all 0.12s',
               background: selectedRole === r ? '#5856d618' : '#f5f5f7',
               color: selectedRole === r ? '#5856d6' : '#aeaeb2',
@@ -221,7 +221,7 @@ function CreatorsField({ value, onChange }) {
           value={customRole}
           onChange={e => setCustomRole(e.target.value)}
           placeholder="역할명 입력 (예: 촬영감독)"
-          style={{ fontSize: 12, color: '#1d1d1f', padding: '7px 10px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
+          style={{ fontSize: 14, color: '#1d1d1f', padding: '7px 10px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
         />
       )}
 
@@ -231,7 +231,7 @@ function CreatorsField({ value, onChange }) {
           onChange={e => setNameInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) add() }}
           placeholder={`${finalRole || '역할 선택 후'} 이름 입력 후 Enter`}
-          style={{ flex: 1, fontSize: 12, color: '#1d1d1f', padding: '7px 10px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
+          style={{ flex: 1, fontSize: 14, color: '#1d1d1f', padding: '7px 10px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
         />
         <button
           onClick={add}
@@ -245,12 +245,12 @@ function CreatorsField({ value, onChange }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: '10px 12px', borderRadius: 10, background: '#f5f5f7' }}>
           {Object.entries(groups).map(([role, members]) => (
             <div key={role} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', width: 30, paddingTop: 4, flexShrink: 0, letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', width: 30, paddingTop: 4, flexShrink: 0, letterSpacing: '0.05em' }}>
                 {role}
               </span>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {members.map(c => (
-                  <span key={c._idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px 3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 500, background: '#ffffff', color: '#1d1d1f', border: '1px solid #00000008' }}>
+                  <span key={c._idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px 3px 10px', borderRadius: 99, fontSize: 13, fontWeight: 500, background: '#ffffff', color: '#1d1d1f', border: '1px solid #00000008' }}>
                     {c.name}
                     <button onClick={() => remove(c._idx)} style={{ lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#c7c7cc', padding: 0 }}>
                       <X size={9} />
@@ -334,10 +334,109 @@ function StarRating({ value = 0, onChange, size = 14, readonly = false }) {
 function Field({ label, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
         {label}
       </span>
       {children}
+    </div>
+  )
+}
+
+// ── 리치 텍스트 에디터 ────────────────────────────────────
+const HIGHLIGHTS = ['#fff176', '#a5d6a7', '#ef9a9a', '#90caf9', '#ce93d8']
+const FONTS = [
+  { label: '기본', value: 'inherit' },
+  { label: '고딕', value: 'system-ui, sans-serif' },
+  { label: '명조', value: 'Georgia, serif' },
+  { label: '모노', value: 'monospace' },
+]
+
+function RichTextEditor({ value, onChange }) {
+  const editorRef = useRef(null)
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = value || ''
+    }
+  }, []) // mount only — avoids cursor jump on rerender
+
+  function exec(cmd, param = null) {
+    editorRef.current?.focus()
+    document.execCommand(cmd, false, param)
+  }
+
+  function applyHighlight(color) {
+    editorRef.current?.focus()
+    document.execCommand('hiliteColor', false, color)
+  }
+
+  const btnBase = {
+    width: 28, height: 28, border: '1px solid #0000000f', borderRadius: 6,
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#f5f5f7', transition: 'all 0.12s', flexShrink: 0,
+  }
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* 툴바 */}
+      <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
+        <button onMouseDown={e => { e.preventDefault(); exec('bold') }} title="굵게 (Ctrl+B)"
+          style={{ ...btnBase, fontSize: 13, fontWeight: 800, color: '#1d1d1f' }}>B</button>
+        <button onMouseDown={e => { e.preventDefault(); exec('italic') }} title="기울임 (Ctrl+I)"
+          style={{ ...btnBase, fontSize: 13, fontStyle: 'italic', fontWeight: 600, color: '#1d1d1f' }}>I</button>
+        <button onMouseDown={e => { e.preventDefault(); exec('underline') }} title="밑줄 (Ctrl+U)"
+          style={{ ...btnBase, fontSize: 13, textDecoration: 'underline', color: '#1d1d1f' }}>U</button>
+        <button onMouseDown={e => { e.preventDefault(); exec('strikeThrough') }} title="취소선"
+          style={{ ...btnBase, fontSize: 13, textDecoration: 'line-through', color: '#1d1d1f' }}>S</button>
+
+        <div style={{ width: 1, height: 20, background: '#0000001a', margin: '0 2px', flexShrink: 0 }} />
+
+        {/* 폰트 선택 */}
+        <select
+          onMouseDown={e => e.stopPropagation()}
+          onChange={e => { editorRef.current?.focus(); document.execCommand('fontName', false, e.target.value) }}
+          defaultValue="inherit"
+          style={{ height: 28, fontSize: 11, border: '1px solid #0000000f', borderRadius: 6, background: '#f5f5f7', color: '#1d1d1f', padding: '0 4px', cursor: 'pointer', outline: 'none' }}
+          title="폰트 변경"
+        >
+          {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+        </select>
+
+        <div style={{ width: 1, height: 20, background: '#0000001a', margin: '0 2px', flexShrink: 0 }} />
+
+        {/* 하이라이트 색상 */}
+        {HIGHLIGHTS.map(color => (
+          <button
+            key={color}
+            onMouseDown={e => { e.preventDefault(); applyHighlight(color) }}
+            title="하이라이트"
+            style={{ width: 20, height: 20, borderRadius: 4, background: color, border: '1px solid #0000001a', cursor: 'pointer', flexShrink: 0 }}
+          />
+        ))}
+        <button
+          onMouseDown={e => { e.preventDefault(); applyHighlight('transparent') }}
+          title="하이라이트 제거"
+          style={{ ...btnBase, width: 20, height: 20, fontSize: 11, color: '#aeaeb2' }}>✕</button>
+
+        <div style={{ width: 1, height: 20, background: '#0000001a', margin: '0 2px', flexShrink: 0 }} />
+
+        <button onMouseDown={e => { e.preventDefault(); exec('removeFormat') }} title="모든 서식 제거"
+          style={{ ...btnBase, fontSize: 11, color: '#aeaeb2' }}>초기화</button>
+      </div>
+
+      {/* 에디터 영역 */}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        data-placeholder="자유롭게 기록하세요..."
+        onInput={e => onChange(e.currentTarget.innerHTML)}
+        style={{
+          flex: 1, outline: 'none', border: '1px solid #0000000f', borderRadius: 8,
+          padding: '10px 13px', background: '#f5f5f7', lineHeight: 1.75, overflowY: 'auto',
+          fontSize: 14, color: '#1d1d1f', fontFamily: 'inherit', minHeight: 120,
+        }}
+      />
     </div>
   )
 }
@@ -395,7 +494,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         <div style={{ padding: '15px 20px 12px', flexShrink: 0, borderBottom: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#86868b', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#86868b', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             {isNew ? '새 아이디어' : '아이디어 편집'}
           </span>
           <button onClick={onClose} style={{ color: '#aeaeb2', cursor: 'pointer', lineHeight: 0, background: 'none', border: 'none', padding: 4, borderRadius: 6 }}>
@@ -415,7 +514,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
                   <button onClick={() => setForm(f => ({ ...f, image: null }))} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <X size={12} />
                   </button>
-                  <button onClick={() => fileRef.current?.click()} style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: '#fff', fontSize: 10, fontWeight: 600 }}>
+                  <button onClick={() => fileRef.current?.click()} style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }}>
                     교체
                   </button>
                 </div>
@@ -427,7 +526,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#c7c7cc'; e.currentTarget.style.color = '#aeaeb2' }}
                 >
                   <ImagePlus size={18} />
-                  <span style={{ fontSize: 11, fontWeight: 500 }}>이미지 첨부</span>
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>이미지 첨부</span>
                 </button>
               )}
             </Field>
@@ -448,7 +547,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
                 {categories.map(cat => (
                   <button key={cat.name} onClick={() => setForm(f => ({ ...f, type: cat.name }))}
                     style={{
-                      padding: '5px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                      padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
                       cursor: 'pointer', border: 'none', transition: 'all 0.15s',
                       background: form.type === cat.name ? (cat.color + '18') : '#f5f5f7',
                       color: form.type === cat.name ? cat.color : '#aeaeb2',
@@ -476,27 +575,25 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <StarRating value={form.rating} onChange={r => setForm(f => ({ ...f, rating: r }))} size={20} />
                 {form.rating > 0 && (
-                  <span style={{ fontSize: 12, color: '#ff9500', fontWeight: 600 }}>{form.rating.toFixed(1)}</span>
+                  <span style={{ fontSize: 14, color: '#ff9500', fontWeight: 600 }}>{form.rating.toFixed(1)}</span>
                 )}
               </div>
             </Field>
           </div>
 
-          {/* 오른쪽: 자유 메모 */}
+          {/* 오른쪽: 자유 메모 (리치 텍스트) */}
           <div style={{ flex: 1, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase', flexShrink: 0 }}>자유 메모</span>
-            <textarea
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase', flexShrink: 0 }}>자유 메모</span>
+            <RichTextEditor
               value={form.memo}
-              onChange={e => setForm(f => ({ ...f, memo: e.target.value }))}
-              placeholder="자유롭게 기록하세요..."
-              style={{ ...inputStyle, flex: 1, resize: 'none', lineHeight: 1.65 }}
+              onChange={html => setForm(f => ({ ...f, memo: html }))}
             />
           </div>
         </div>
 
         <div style={{ padding: '12px 20px 16px', flexShrink: 0, borderTop: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {!isNew ? (
-            <button onClick={onDelete} style={{ fontSize: 12, color: '#ff3b30', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <button onClick={onDelete} style={{ fontSize: 14, color: '#ff3b30', cursor: 'pointer', background: 'none', border: 'none', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
               <Trash2 size={13} /> 삭제
             </button>
           ) : <div />}
@@ -584,7 +681,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
         <div className="flex-shrink-0 flex items-center gap-1 px-3 py-2 overflow-x-auto" style={{ borderBottom: '1px solid #0000000f' }}>
           <button
             onClick={() => setActiveType('전체')}
-            className="flex-shrink-0 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors duration-150"
+            className="flex-shrink-0 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors duration-150"
             style={{ background: safeActiveType === '전체' ? '#00000008' : 'transparent', color: safeActiveType === '전체' ? '#1d1d1f' : '#aeaeb2' }}
           >
             전체
@@ -593,7 +690,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
             <button
               key={cat.name}
               onClick={() => setActiveType(cat.name)}
-              className="flex-shrink-0 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors duration-150"
+              className="flex-shrink-0 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors duration-150"
               style={{ background: safeActiveType === cat.name ? cat.color + '18' : 'transparent', color: safeActiveType === cat.name ? cat.color : '#aeaeb2' }}
             >
               {cat.name}
@@ -603,7 +700,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
 
         {/* 정렬 + 컬럼 헤더 */}
         <div className="flex-shrink-0 flex items-center px-3 py-2 gap-2" style={{ borderBottom: '1px solid #00000008' }}>
-          <div className="flex-1 grid text-[9px] font-semibold tracking-widest uppercase" style={{ gridTemplateColumns: '1fr 70px 80px 44px', color: '#aeaeb2' }}>
+          <div className="flex-1 grid text-[13px] font-semibold tracking-widest uppercase" style={{ gridTemplateColumns: '1fr 70px 80px 44px', color: '#aeaeb2' }}>
             <span>제목</span>
             <span>종류</span>
             <span>별점</span>
@@ -612,7 +709,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
           <div className="flex items-center gap-1 flex-shrink-0">
             {[['date','날짜'],['rating','별점'],['title','제목']].map(([k, label]) => (
               <button key={k} onClick={() => setSortBy(k)}
-                style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, border: 'none', cursor: 'pointer', fontWeight: 600,
+                style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, border: 'none', cursor: 'pointer', fontWeight: 600,
                   background: sortBy === k ? '#5856d618' : '#00000008',
                   color: sortBy === k ? '#5856d6' : '#aeaeb2',
                 }}>
@@ -625,7 +722,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 && (
             <div className="flex items-center justify-center h-full pb-8">
-              <p style={{ fontSize: 11, color: '#c7c7cc' }}>아이디어를 추가해보세요</p>
+              <p style={{ fontSize: 13, color: '#c7c7cc' }}>아이디어를 추가해보세요</p>
             </div>
           )}
 
@@ -652,14 +749,14 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
                       <FileText size={11} style={{ color: '#c7c7cc', flexShrink: 0 }} />
                     )}
                     <div className="min-w-0">
-                      <span className="text-[11px] truncate block" style={{ color: '#1d1d1f' }}>{idea.title}</span>
+                      <span className="text-[13px] truncate block" style={{ color: '#1d1d1f' }}>{idea.title}</span>
                       {creatorSummary && (
-                        <span className="text-[9px] truncate block" style={{ color: '#aeaeb2' }}>{creatorSummary}</span>
+                        <span className="text-[13px] truncate block" style={{ color: '#aeaeb2' }}>{creatorSummary}</span>
                       )}
                     </div>
                   </div>
                   <div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold"
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[13px] font-semibold"
                       style={{ background: color + '18', color }}>
                       {idea.type}
                     </span>
@@ -671,7 +768,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
                       onChange={r => setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, rating: r } : i))}
                     />
                   </div>
-                  <span className="text-[10px] text-right" style={{ color: '#aeaeb2' }}>
+                  <span className="text-[12px] text-right" style={{ color: '#aeaeb2' }}>
                     {formatDate(idea.createdAt)}
                   </span>
                 </div>
@@ -685,7 +782,7 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
             onMouseEnter={e => e.currentTarget.style.color = '#86868b'}
             onMouseLeave={e => e.currentTarget.style.color = '#c7c7cc'}>
             <Plus size={11} />
-            <span className="text-[11px]">새 아이디어</span>
+            <span className="text-[13px]">새 아이디어</span>
           </button>
         </div>
       </div>

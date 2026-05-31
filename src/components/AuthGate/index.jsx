@@ -64,7 +64,7 @@ function LoginScreen() {
         </button>
 
         {error && (
-          <p style={{ fontSize: 12, color: '#ff3b30', margin: 0, textAlign: 'center' }}>{error}</p>
+          <p style={{ fontSize: 14, color: '#ff3b30', margin: 0, textAlign: 'center' }}>{error}</p>
         )}
       </div>
     </div>

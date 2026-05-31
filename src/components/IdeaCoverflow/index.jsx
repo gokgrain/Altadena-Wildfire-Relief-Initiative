@@ -90,8 +90,8 @@ function CoverCard({ idea, position, onClick, isFlipped, categories }) {
             <img src={idea.image} alt={idea.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.08) 55%, transparent 100%)' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.92)', lineHeight: 1.3 }}>{idea.title}</span>
-              <span style={{ alignSelf: 'flex-start', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: cs.accent + '55', color: cs.accent, backdropFilter: 'blur(4px)' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.92)', lineHeight: 1.3 }}>{idea.title}</span>
+              <span style={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: cs.accent + '55', color: cs.accent, backdropFilter: 'blur(4px)' }}>
                 {idea.type}
               </span>
             </div>
@@ -99,7 +99,7 @@ function CoverCard({ idea, position, onClick, isFlipped, categories }) {
         ) : (
           <div style={{ width: '100%', height: '100%', background: `linear-gradient(145deg, ${cs.bg} 0%, ${cs.accent}28 100%)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 16px' }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: '#ffffff', textAlign: 'center', lineHeight: 1.35, letterSpacing: '-0.01em', wordBreak: 'keep-all' }}>{idea.title}</span>
-            <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: cs.accent + '35', color: cs.accent }}>{idea.type}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: cs.accent + '35', color: cs.accent }}>{idea.type}</span>
           </div>
         )}
       </div>
@@ -127,10 +127,10 @@ function CoverCard({ idea, position, onClick, isFlipped, categories }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, borderTop: '1px solid #00000010', paddingTop: 12 }}>
             {Object.entries(grouped).map(([role, names]) => (
               <div key={role} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                <span style={{ fontSize: 8, fontWeight: 700, color: '#aeaeb2', width: 28, flexShrink: 0, letterSpacing: '0.05em' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#aeaeb2', width: 28, flexShrink: 0, letterSpacing: '0.05em' }}>
                   {role}
                 </span>
-                <span style={{ fontSize: 11, color: '#1d1d1f', lineHeight: 1.4 }}>
+                <span style={{ fontSize: 13, color: '#1d1d1f', lineHeight: 1.4 }}>
                   {names.join(' · ')}
                 </span>
               </div>
@@ -246,7 +246,7 @@ export default function IdeaCoverflow({ ideas, categories, onActiveChange }) {
           <span className="panel-title">Idea Archive</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <p style={{ fontSize: 11, color: '#c7c7cc' }}>Idea List에서 아이디어를 추가하세요</p>
+          <p style={{ fontSize: 13, color: '#c7c7cc' }}>Idea List에서 아이디어를 추가하세요</p>
         </div>
       </div>
     )

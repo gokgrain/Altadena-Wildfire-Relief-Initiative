@@ -142,7 +142,7 @@ function BlockDetailModal({ block, onSave, onDelete, onClose }) {
         {/* 헤더 */}
         <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: block.color }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#86868b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>일정 편집</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#86868b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>일정 편집</span>
           <button onClick={onClose} style={{ lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#aeaeb2', padding: 2 }}>
             <X size={15} />
           </button>
@@ -151,19 +151,19 @@ function BlockDetailModal({ block, onSave, onDelete, onClose }) {
         <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* 내용 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>내용</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>내용</span>
             <input value={text} onChange={e => setText(e.target.value)} style={inputSt} />
           </div>
 
           {/* 날짜 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>날짜</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>날짜</span>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputSt} />
           </div>
 
           {/* 시작 시간 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>시작 시간</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>시작 시간</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input type="number" min={START_HOUR} max={END_HOUR - 1} value={startH} onChange={e => setStartH(Number(e.target.value))} style={numSt} />
               <span style={{ color: '#aeaeb2', fontWeight: 700 }}>:</span>
@@ -173,25 +173,25 @@ function BlockDetailModal({ block, onSave, onDelete, onClose }) {
 
           {/* 소요 시간 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>소요 시간</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>소요 시간</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input type="number" min={0} max={18} value={durH} onChange={e => setDurH(Number(e.target.value))} style={numSt} />
-              <span style={{ fontSize: 11, color: '#aeaeb2' }}>시간</span>
+              <span style={{ fontSize: 13, color: '#aeaeb2' }}>시간</span>
               <input type="number" min={0} max={59} step={1} value={durM} onChange={e => setDurM(Number(e.target.value))} style={numSt} />
-              <span style={{ fontSize: 11, color: '#aeaeb2' }}>분</span>
+              <span style={{ fontSize: 13, color: '#aeaeb2' }}>분</span>
             </div>
           </div>
 
           {/* 메모 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>메모</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.12em', textTransform: 'uppercase' }}>메모</span>
             <textarea value={memo} onChange={e => setMemo(e.target.value)} rows={3} placeholder="메모를 입력하세요..." style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
           </div>
         </div>
 
         {/* 푸터 */}
         <div style={{ padding: '10px 18px 16px', borderTop: '1px solid #0000000f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button onClick={onDelete} style={{ fontSize: 12, color: '#ff3b30', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button onClick={onDelete} style={{ fontSize: 14, color: '#ff3b30', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
             <X size={12} /> 삭제
           </button>
           <button onClick={handleSave} style={{ padding: '7px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: '#5856d6', color: '#fff' }}>
@@ -454,7 +454,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
           <button className="icon-btn" onClick={() => setWeekOffset(o => o - 1)}>
             <ChevronLeft size={12} />
           </button>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#86868b', minWidth: 90, textAlign: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#86868b', minWidth: 90, textAlign: 'center' }}>
             {getWeekLabel(dates)}
           </span>
           <button className="icon-btn" onClick={() => setWeekOffset(o => o + 1)}>
@@ -464,14 +464,14 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
             <button
               className="icon-btn"
               onClick={() => { setWeekOffset(0); setSelectedDay(todayIdx) }}
-              style={{ fontSize: 8, color: '#5856d6', padding: '1px 4px' }}
+              style={{ fontSize: 10, color: '#5856d6', padding: '1px 4px' }}
               title="오늘로 이동"
             >
               오늘
             </button>
           )}
         </div>
-        <span style={{ fontSize: 9, color: '#aeaeb2' }}>⠿ 드래그 → 배치·이동</span>
+        <span style={{ fontSize: 11, color: '#aeaeb2' }}>⠿ 드래그 → 배치·이동</span>
       </div>
 
       {/* 요일 탭 */}
@@ -486,9 +486,9 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
               className="flex-1 flex flex-col items-center py-1.5 gap-0.5 transition-colors"
               style={{ borderBottom: isSelected ? '2px solid #5856d6' : '2px solid transparent' }}
             >
-              <span style={{ fontSize: 9, color: isSelected ? '#5856d6' : '#aeaeb2' }}>{d}</span>
+              <span style={{ fontSize: 11, color: isSelected ? '#5856d6' : '#aeaeb2' }}>{d}</span>
               <span style={{
-                fontSize: 11, fontWeight: 600, width: 18, height: 18,
+                fontSize: 13, fontWeight: 600, width: 18, height: 18,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 borderRadius: '50%',
                 background: isToday ? '#ff3b30' : 'transparent',
@@ -521,7 +521,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
               <div key={hour} style={{ position: 'absolute', top, left: 0, right: 0 }}>
                 <span style={{
                   position: 'absolute', left: 4, top: 0,
-                  fontSize: 9, lineHeight: `${SLOT_HEIGHT}px`,
+                  fontSize: 11, lineHeight: `${SLOT_HEIGHT}px`,
                   color: '#c7c7cc', fontFamily: 'monospace', userSelect: 'none',
                 }}>
                   {String(hour).padStart(2, '0')}
@@ -546,7 +546,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
               zIndex: 5,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ fontSize: 9, color: '#5856d6' }}>놓기</span>
+              <span style={{ fontSize: 11, color: '#5856d6' }}>놓기</span>
             </div>
           )}
 
@@ -616,18 +616,18 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                         e.stopPropagation()
                       }}
                       onClick={e => e.stopPropagation()}
-                      style={{ width: '100%', fontSize: 11, color: '#1d1d1f', background: 'transparent', border: 'none', outline: 'none', borderBottom: `1px solid ${block.color}60`, fontFamily: 'inherit' }}
+                      style={{ width: '100%', fontSize: 13, color: '#1d1d1f', background: 'transparent', border: 'none', outline: 'none', borderBottom: `1px solid ${block.color}60`, fontFamily: 'inherit' }}
                     />
                   ) : (
                     <div
-                      style={{ fontSize: 11, lineHeight: 1.3, color: isDone ? '#aeaeb2' : '#1d1d1f', textDecoration: isDone ? 'line-through' : 'none', wordBreak: 'break-word' }}
+                      style={{ fontSize: 13, lineHeight: 1.3, color: isDone ? '#aeaeb2' : '#1d1d1f', textDecoration: isDone ? 'line-through' : 'none', wordBreak: 'break-word' }}
                       onDoubleClick={e => { e.stopPropagation(); setEditingText(block.text); setEditingBlockId(block.id) }}
                     >
                       {block.text}
                     </div>
                   )}
                   {blockH >= 36 && (
-                    <div style={{ fontSize: 9, color: '#aeaeb2', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: '#aeaeb2', marginTop: 2 }}>
                       {slotToTime(block.startSlot)} – {slotToTime(block.startSlot + liveSlots)}
                     </div>
                   )}
@@ -648,7 +648,7 @@ export default function Timebox({ timeboxBlocks, setTimeboxBlocks, setBrainItems
                           onClick={e => { e.stopPropagation(); changeStatus(block, key) }}
                           style={{
                             flex: 1, padding: '2px 0', borderRadius: 4,
-                            fontSize: 9, fontWeight: 700, cursor: 'pointer',
+                            fontSize: 11, fontWeight: 700, cursor: 'pointer',
                             background: active ? s.bg : '#00000006',
                             color: active ? s.color : '#aeaeb2',
                             border: active ? `1px solid ${s.accent}` : '1px solid transparent',

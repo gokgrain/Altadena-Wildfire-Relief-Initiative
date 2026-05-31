@@ -147,7 +147,7 @@ export default function WeeklyCalendar({ timeboxBlocks, setTimeboxBlocks, weekOf
     <div className="panel rounded-lg flex flex-col h-full overflow-hidden">
       <div className="panel-header flex-shrink-0">
         <span className="panel-title">주간 캘린더</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 9 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
           {[['#34c759', '완료'], ['#ff9500', '진행중'], ['#ff3b30', '미완료']].map(([c, l]) => (
             <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#aeaeb2' }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: c, display: 'inline-block' }} />{l}
@@ -163,9 +163,9 @@ export default function WeeklyCalendar({ timeboxBlocks, setTimeboxBlocks, weekOf
           const isToday = dk === todayKey
           return (
             <div key={i} className="flex-1 flex flex-col items-center py-1 gap-0.5">
-              <span style={{ fontSize: 9, color: isToday ? '#5856d6' : '#aeaeb2' }}>{DAYS[i]}</span>
+              <span style={{ fontSize: 11, color: isToday ? '#5856d6' : '#aeaeb2' }}>{DAYS[i]}</span>
               <span style={{
-                fontSize: 11, fontWeight: 600, width: 18, height: 18,
+                fontSize: 13, fontWeight: 600, width: 18, height: 18,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 borderRadius: '50%',
                 background: isToday ? '#ff3b30' : 'transparent',
@@ -182,7 +182,7 @@ export default function WeeklyCalendar({ timeboxBlocks, setTimeboxBlocks, weekOf
         <div style={{ width: 28, flexShrink: 0, position: 'relative', height: TOTAL_SLOTS * SLOT_H }}>
           {Array.from({ length: END_HOUR - START_HOUR }, (_, i) => (
             <div key={i} style={{ position: 'absolute', top: i * 2 * SLOT_H, left: 0, right: 0 }}>
-              <span style={{ position: 'absolute', left: 2, top: 0, fontSize: 8, lineHeight: `${SLOT_H}px`, color: '#c7c7cc', fontFamily: 'monospace', userSelect: 'none' }}>
+              <span style={{ position: 'absolute', left: 2, top: 0, fontSize: 10, lineHeight: `${SLOT_H}px`, color: '#c7c7cc', fontFamily: 'monospace', userSelect: 'none' }}>
                 {String(START_HOUR + i).padStart(2, '0')}
               </span>
             </div>
@@ -264,7 +264,7 @@ export default function WeeklyCalendar({ timeboxBlocks, setTimeboxBlocks, weekOf
                     >
                       <div style={{ padding: '2px 4px' }}>
                         <div style={{
-                          fontSize: 9, fontWeight: 600,
+                          fontSize: 11, fontWeight: 600,
                           color: block.status === 'done' ? '#aeaeb2' : '#1d1d1f',
                           textDecoration: block.status === 'done' ? 'line-through' : 'none',
                           lineHeight: 1.2, overflow: 'hidden',
@@ -273,7 +273,7 @@ export default function WeeklyCalendar({ timeboxBlocks, setTimeboxBlocks, weekOf
                           {block.text}
                         </div>
                         {h >= SLOT_H * 2 && (
-                          <div style={{ fontSize: 8, color: '#aeaeb2', marginTop: 1 }}>
+                          <div style={{ fontSize: 10, color: '#aeaeb2', marginTop: 1 }}>
                             {slotToTime(block.startSlot)}
                           </div>
                         )}

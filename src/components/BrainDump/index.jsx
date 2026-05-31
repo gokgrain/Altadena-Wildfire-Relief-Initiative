@@ -28,7 +28,7 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
   return (
     <div className="flex-shrink-0 px-3 pt-2.5 pb-2" style={{ maxHeight: '38%', overflowY: 'auto' }}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[9px] font-bold tracking-[0.18em] uppercase" style={{ color: '#aeaeb2' }}>
+        <span className="text-[13px] font-bold tracking-[0.18em] uppercase" style={{ color: '#aeaeb2' }}>
           Weekly Must Todo
         </span>
       </div>
@@ -46,7 +46,7 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
             <Star size={10} style={{ color: '#5856d6', fill: '#5856d6', flexShrink: 0 }} />
             <span
               className="flex-1 truncate font-semibold"
-              style={{ fontSize: 12, color: '#5856d6', letterSpacing: '0.01em' }}
+              style={{ fontSize: 14, color: '#5856d6', letterSpacing: '0.01em' }}
             >
               {todo.text}
             </span>
@@ -61,7 +61,7 @@ function MustTodoSection({ mustTodos, setMustTodos }) {
         ))}
 
         {mustTodos.filter(t => !t.done).length === 0 && (
-          <p className="text-[10px] py-1 px-1" style={{ color: '#c7c7cc' }}>
+          <p className="text-[12px] py-1 px-1" style={{ color: '#c7c7cc' }}>
             Brain Dump에서 ⭐ must를 눌러 추가하세요
           </p>
         )}
@@ -152,13 +152,13 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit()
               if (e.key === 'Escape') { setEditText(item.text); setEditing(false) }
             }}
-            className="text-xs flex-1 min-w-0 bg-transparent outline-none"
+            className="text-sm flex-1 min-w-0 bg-transparent outline-none"
             style={{ color: '#1d1d1f', borderBottom: '1px solid #5856d640' }}
             onClick={e => e.stopPropagation()}
           />
         ) : (
           <span
-            className="text-xs flex-1 min-w-0 truncate"
+            className="text-sm flex-1 min-w-0 truncate"
             style={{ color: isPlaced ? '#aeaeb2' : '#86868b' }}
             onDoubleClick={() => { setEditText(item.text); setEditing(true) }}
           >
@@ -170,7 +170,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
         {isPlaced && !splitting && (
           <button
             onClick={e => { e.stopPropagation(); setShowInfo(s => !s) }}
-            className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
+            className="flex-shrink-0 text-[13px] font-bold px-1.5 py-0.5 rounded"
             style={{
               background: badgeStyle.bg,
               color: badgeStyle.color,
@@ -189,7 +189,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
             onDragStart={e => e.preventDefault()}
             onClick={e => e.stopPropagation()}
           >
-            <span style={{ fontSize: 9, color: '#aeaeb2', whiteSpace: 'nowrap' }}>몇 분할?</span>
+            <span style={{ fontSize: 11, color: '#aeaeb2', whiteSpace: 'nowrap' }}>몇 분할?</span>
             <input
               ref={splitInputRef}
               type="number"
@@ -203,7 +203,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
                 e.stopPropagation()
               }}
               style={{
-                width: 38, fontSize: 11, fontWeight: 700, textAlign: 'center',
+                width: 38, fontSize: 13, fontWeight: 700, textAlign: 'center',
                 color: '#1d1d1f', background: '#f5f5f7',
                 border: '1px solid #5856d640', borderRadius: 5,
                 outline: 'none', padding: '2px 4px', fontFamily: 'inherit',
@@ -212,7 +212,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
             <button
               onClick={confirmSplit}
               style={{
-                fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 5,
+                fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5,
                 background: '#5856d6', color: '#fff', border: 'none', cursor: 'pointer',
               }}
             >
@@ -229,7 +229,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
           <div className="flex items-center gap-1 flex-shrink-0" onDragStart={e => e.preventDefault()}>
             <button
               onClick={onMust}
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-semibold transition-all duration-150"
               style={{
                 background: item.isMust ? '#5856d614' : '#00000008',
                 color: item.isMust ? '#5856d6' : '#86868b',
@@ -243,7 +243,7 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
             {!isPlaced && (
               <button
                 onClick={openSplit}
-                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all duration-150"
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-semibold transition-all duration-150"
                 style={{ background: '#00000008', color: '#86868b', border: '1px solid #00000012' }}
                 title="여러 조각으로 쪼개기"
               >
@@ -279,15 +279,15 @@ function BrainItem({ item, onMust, onDelete, onDragStart, onEdit, onSplit, place
         >
           {placement ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 10, color: '#86868b' }}>
+              <span style={{ fontSize: 12, color: '#86868b' }}>
                 📅 {formatScheduleDate(placement.date)}
               </span>
-              <span style={{ fontSize: 10, color: '#86868b' }}>
+              <span style={{ fontSize: 12, color: '#86868b' }}>
                 ⏰ {slotToTime(placement.block.startSlot)} – {slotToTime(placement.block.startSlot + placement.block.durationSlots)}
               </span>
             </div>
           ) : (
-            <span style={{ fontSize: 10, color: '#aeaeb2' }}>타임박스 일정 정보 없음</span>
+            <span style={{ fontSize: 12, color: '#aeaeb2' }}>타임박스 일정 정보 없음</span>
           )}
           <button
             onClick={() => setShowInfo(false)}
@@ -421,20 +421,20 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
         <div className="flex items-center gap-2">
           <span className="panel-title">Brain Dump</span>
           <span
-            className="text-[9px] px-1.5 py-0.5 rounded"
+            className="text-[13px] px-1.5 py-0.5 rounded"
             style={{ background: '#f5f5f7', color: '#aeaeb2' }}
           >
             {brainItems.length}
           </span>
         </div>
-        <span className="text-[9px]" style={{ color: '#c7c7cc' }}>⠿ 드래그 → 타임박스</span>
+        <span className="text-[13px]" style={{ color: '#c7c7cc' }}>⠿ 드래그 → 타임박스</span>
       </div>
 
       {/* 항목 리스트 */}
       <div className="flex-1 overflow-y-auto px-1 py-1">
         {brainItems.length === 0 && (
           <div className="flex items-center justify-center h-full pb-8">
-            <p className="text-[11px]" style={{ color: '#c7c7cc' }}>머릿속 할 일을 모두 쏟아내세요</p>
+            <p className="text-[13px]" style={{ color: '#c7c7cc' }}>머릿속 할 일을 모두 쏟아내세요</p>
           </div>
         )}
         {brainItems.map(item => (
@@ -462,7 +462,7 @@ export default function BrainDump({ brainItems, setBrainItems, mustTodos, setMus
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addItem() }}
           placeholder="할 일을 입력하고 Enter..."
-          className="flex-1 bg-transparent text-xs outline-none"
+          className="flex-1 bg-transparent text-sm outline-none"
           style={{ color: '#86868b' }}
         />
         <button

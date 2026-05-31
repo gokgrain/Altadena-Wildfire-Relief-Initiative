@@ -66,7 +66,7 @@ function MiniLineChart({ data }) {
   if (data.every(v => v === 0)) {
     return (
       <div className="flex items-center justify-center" style={{ height: H }}>
-        <span className="text-[10px]" style={{ color: '#aeaeb2' }}>아직 기록 없음</span>
+        <span className="text-[12px]" style={{ color: '#aeaeb2' }}>아직 기록 없음</span>
       </div>
     )
   }
@@ -248,13 +248,13 @@ export default function HabitTracker({ setBrainItems }) {
               {/* Name */}
               <div className="flex-1 min-w-0">
                 <span
-                  className="text-xs font-medium truncate block transition-colors duration-150"
+                  className="text-sm font-medium truncate block transition-colors duration-150"
                   style={{ color: done ? '#aeaeb2' : '#1d1d1f', textDecoration: done ? 'line-through' : 'none' }}
                 >
                   {habit.name}
                 </span>
                 {streak > 0 && (
-                  <span className="text-[10px]" style={{ color: '#aeaeb2' }}>
+                  <span className="text-[12px]" style={{ color: '#aeaeb2' }}>
                     {streak}일 연속
                   </span>
                 )}
@@ -295,7 +295,7 @@ export default function HabitTracker({ setBrainItems }) {
               }}
               onBlur={addHabit}
               placeholder="습관 이름 입력..."
-              className="flex-1 bg-transparent text-xs outline-none"
+              className="flex-1 bg-transparent text-sm outline-none"
               style={{ color: '#1d1d1f' }}
             />
           </div>
@@ -303,7 +303,7 @@ export default function HabitTracker({ setBrainItems }) {
 
         {habits.length === 0 && !adding && (
           <div className="flex flex-col items-center justify-center py-6 gap-2">
-            <span className="text-[11px]" style={{ color: '#aeaeb2' }}>
+            <span className="text-[13px]" style={{ color: '#aeaeb2' }}>
               습관을 추가해보세요
             </span>
           </div>
@@ -315,7 +315,7 @@ export default function HabitTracker({ setBrainItems }) {
         className="flex-shrink-0 mx-2 mb-2 rounded-xl p-3"
         style={{ background: '#f5f5f7' }}
       >
-        <p className="text-[9px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#86868b' }}>
+        <p className="text-[13px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#86868b' }}>
           주간 성취율
         </p>
         <MiniLineChart data={rates} />
@@ -323,7 +323,7 @@ export default function HabitTracker({ setBrainItems }) {
           {DAYS.map((d, i) => (
             <span
               key={d}
-              className="text-[9px]"
+              className="text-[13px]"
               style={{ color: i === todayDayIdx ? '#34c759' : '#aeaeb2' }}
             >
               {d}

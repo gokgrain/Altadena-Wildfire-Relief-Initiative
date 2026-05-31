@@ -49,12 +49,12 @@ export default function WeeklyPlanner() {
                   </svg>
                 )}
               </div>
-              <span className={`text-xs ${todo.done ? 'text-white/30 line-through' : 'text-white/70'}`}>
+              <span className={`text-sm ${todo.done ? 'text-white/30 line-through' : 'text-white/70'}`}>
                 {todo.text}
               </span>
             </div>
           ))}
-          <button className="flex items-center gap-1.5 text-[11px] text-white/20 hover:text-white/40 transition-colors mt-1 ml-0.5">
+          <button className="flex items-center gap-1.5 text-[13px] text-white/20 hover:text-white/40 transition-colors mt-1 ml-0.5">
             <Plus size={11} /> 항목 추가
           </button>
         </div>
@@ -70,13 +70,13 @@ export default function WeeklyPlanner() {
             className="w-3 h-3 rounded-sm flex-shrink-0"
             style={{ background: '#ffffff15' }}
           />
-          <span className="text-[11px] text-white/50 font-medium">
+          <span className="text-[13px] text-white/50 font-medium">
             {today.getFullYear()}년 {today.getMonth() + 1}월
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button className="icon-btn"><ChevronLeft size={12} /></button>
-          <span className="text-[11px] text-white/50 px-1">오늘</span>
+          <span className="text-[13px] text-white/50 px-1">오늘</span>
           <button className="icon-btn"><ChevronRight size={12} /></button>
         </div>
       </div>
@@ -96,9 +96,9 @@ export default function WeeklyPlanner() {
                 className="flex flex-col items-center py-1.5 gap-0.5"
                 style={{ borderRight: i < 6 ? '1px solid #ffffff06' : 'none' }}
               >
-                <span className="text-[9px] text-white/25 font-medium">{d}</span>
+                <span className="text-[13px] text-white/25 font-medium">{d}</span>
                 <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[13px] font-semibold
                     ${isToday ? 'bg-rose-500 text-white' : 'text-white/40'}`}
                 >
                   {date.getDate()}

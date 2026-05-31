@@ -41,7 +41,7 @@ function LineChart({ id, values, color = '#5856d6', height = 64 }) {
   const nonNull = values.filter(v => v !== null)
   if (!nonNull.length) return (
     <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span style={{ fontSize: 10, color: '#aeaeb2' }}>데이터 없음</span>
+      <span style={{ fontSize: 12, color: '#aeaeb2' }}>데이터 없음</span>
     </div>
   )
   const W = 300, H = height, PAD = 8
@@ -82,7 +82,7 @@ function DonutChart({ done, total, color = '#5856d6', size = 76 }) {
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', lineHeight: 1 }}>{Math.round(rate * 100)}%</span>
-        <span style={{ fontSize: 8, color: '#aeaeb2', marginTop: 1 }}>{done}/{total}</span>
+        <span style={{ fontSize: 10, color: '#aeaeb2', marginTop: 1 }}>{done}/{total}</span>
       </div>
     </div>
   )
@@ -94,7 +94,7 @@ function HBarChart({ data }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       {data.map(({ label, rate, total }, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 14, fontSize: 9, color: '#aeaeb2', textAlign: 'right', flexShrink: 0 }}>{label}</span>
+          <span style={{ width: 14, fontSize: 11, color: '#aeaeb2', textAlign: 'right', flexShrink: 0 }}>{label}</span>
           <div style={{ flex: 1, height: 5, background: '#00000008', borderRadius: 3, overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: 3,
@@ -103,7 +103,7 @@ function HBarChart({ data }) {
               transition: 'width 0.4s',
             }} />
           </div>
-          <span style={{ width: 28, fontSize: 9, color: '#aeaeb2', textAlign: 'right', flexShrink: 0 }}>
+          <span style={{ width: 28, fontSize: 11, color: '#aeaeb2', textAlign: 'right', flexShrink: 0 }}>
             {total > 0 ? `${Math.round(rate)}%` : '–'}
           </span>
         </div>
@@ -119,7 +119,7 @@ function VBarChart({ data }) {
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: BAR_H + 28 }}>
       {data.map(({ label, value, color }, i) => (
         <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-          <span style={{ fontSize: 9, color: '#86868b' }}>{value}</span>
+          <span style={{ fontSize: 11, color: '#86868b' }}>{value}</span>
           <div style={{ width: '100%', height: BAR_H, display: 'flex', alignItems: 'flex-end' }}>
             <div style={{
               width: '100%',
@@ -127,7 +127,7 @@ function VBarChart({ data }) {
               background: color, borderRadius: '3px 3px 0 0', transition: 'height 0.4s',
             }} />
           </div>
-          <span style={{ fontSize: 8, color: '#aeaeb2', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 10, color: '#aeaeb2', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {label}
           </span>
         </div>
@@ -143,8 +143,8 @@ function MiniDistBar({ dist, color }) {
       {Object.entries(dist).map(([k, v]) => (
         <div key={k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <div style={{ width: '100%', height: 4, background: v > 0 ? color : '#0000000a', borderRadius: 2, opacity: 0.4 + (v / max) * 0.6 }} />
-          <span style={{ fontSize: 7, color: '#aeaeb2', textAlign: 'center' }}>{k}</span>
-          <span style={{ fontSize: 9, color: '#86868b', textAlign: 'center' }}>{v}</span>
+          <span style={{ fontSize: 9, color: '#aeaeb2', textAlign: 'center' }}>{k}</span>
+          <span style={{ fontSize: 11, color: '#86868b', textAlign: 'center' }}>{v}</span>
         </div>
       ))}
     </div>
@@ -155,8 +155,8 @@ function StatCard({ title, subtitle, children }) {
   return (
     <div className="panel rounded-lg" style={{ padding: '10px 12px', flexShrink: 0 }}>
       <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#86868b', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 9, color: '#aeaeb2', marginTop: 1 }}>{subtitle}</div>}
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#86868b', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 11, color: '#aeaeb2', marginTop: 1 }}>{subtitle}</div>}
       </div>
       {children}
     </div>
@@ -171,7 +171,7 @@ function MonthlyCalendar({ year, month, timeboxBlocks }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', flexShrink: 0, borderBottom: '1px solid #00000008' }}>
         {DAYS.map(d => (
-          <div key={d} style={{ textAlign: 'center', padding: '5px 0', fontSize: 9, color: '#aeaeb2' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', padding: '5px 0', fontSize: 11, color: '#aeaeb2' }}>{d}</div>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: 'repeat(6, 1fr)', flex: 1 }}>
@@ -188,7 +188,7 @@ function MonthlyCalendar({ year, month, timeboxBlocks }) {
               background: isToday ? '#5856d608' : 'transparent',
             }}>
               <div style={{
-                fontSize: 9, width: 16, height: 16, flexShrink: 0, marginBottom: 2,
+                fontSize: 11, width: 16, height: 16, flexShrink: 0, marginBottom: 2,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%',
                 fontWeight: isToday ? 700 : 400,
                 background: isToday ? '#5856d620' : 'transparent',
@@ -200,12 +200,12 @@ function MonthlyCalendar({ year, month, timeboxBlocks }) {
                 {blocks.slice(0, 4).map(block => (
                   <div key={block.id} style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, borderLeft: `2px solid ${block.color || STATUS_COLOR[block.status] || '#c7c7cc'}`, background: (block.color || '#c7c7cc') + '18', borderRadius: '0 2px 2px 0', paddingLeft: 2, paddingRight: 2 }}>
                     <div style={{ width: 4, height: 4, borderRadius: '50%', flexShrink: 0, background: STATUS_COLOR[block.status] || '#c7c7cc' }} />
-                    <span style={{ fontSize: 8, color: block.status === 'done' ? '#aeaeb2' : '#1d1d1f', textDecoration: block.status === 'done' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, lineHeight: 1.4 }}>
+                    <span style={{ fontSize: 10, color: block.status === 'done' ? '#aeaeb2' : '#1d1d1f', textDecoration: block.status === 'done' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, lineHeight: 1.4 }}>
                       {block.text}
                     </span>
                   </div>
                 ))}
-                {blocks.length > 4 && <span style={{ fontSize: 8, color: '#aeaeb2' }}>+{blocks.length - 4}</span>}
+                {blocks.length > 4 && <span style={{ fontSize: 10, color: '#aeaeb2' }}>+{blocks.length - 4}</span>}
               </div>
             </div>
           )
@@ -350,7 +350,7 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
           </span>
           <button className="icon-btn" onClick={nextMonth}><ChevronRight size={13} /></button>
         </div>
-        <span style={{ fontSize: 9, color: '#aeaeb2', letterSpacing: '0.1em' }}>SCHEDULER ANALYTICS</span>
+        <span style={{ fontSize: 11, color: '#aeaeb2', letterSpacing: '0.1em' }}>SCHEDULER ANALYTICS</span>
       </div>
 
       {/* Body */}
@@ -360,7 +360,7 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
         <div className="panel rounded-lg" style={{ flex: '0 0 44%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div className="panel-header">
             <span className="panel-title">월별 캘린더</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 9 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#86868b' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34c759', display: 'inline-block' }} />완료
               </span>
@@ -385,7 +385,7 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
             <LineChart id="exec" values={weeklyExecution.map(w => w.rate)} color="#5856d6" height={64} />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3, paddingInline: 2 }}>
               {weeklyExecution.map((w, i) => (
-                <span key={i} style={{ fontSize: 7, color: i === 7 ? '#5856d6' : '#c7c7cc' }}>{w.label}</span>
+                <span key={i} style={{ fontSize: 9, color: i === 7 ? '#5856d6' : '#c7c7cc' }}>{w.label}</span>
               ))}
             </div>
           </StatCard>
@@ -398,12 +398,12 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', lineHeight: 1 }}>{mustStats.done}</div>
-                    <div style={{ fontSize: 9, color: '#aeaeb2' }}>완료</div>
+                    <div style={{ fontSize: 11, color: '#aeaeb2' }}>완료</div>
                   </div>
                   <div style={{ width: 1, height: 16, background: '#00000010' }} />
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: '#86868b', lineHeight: 1 }}>{mustStats.active}</div>
-                    <div style={{ fontSize: 9, color: '#aeaeb2' }}>진행중</div>
+                    <div style={{ fontSize: 11, color: '#aeaeb2' }}>진행중</div>
                   </div>
                 </div>
               </div>
@@ -436,7 +436,7 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
                 <LineChart id="habit" values={habitHistory} color="#34c759" height={64} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2, paddingInline: 2 }}>
                   {habitHistory.map((_, i) => (
-                    <span key={i} style={{ fontSize: 7, color: i === 11 ? '#34c759' : '#d1d1d6' }}>
+                    <span key={i} style={{ fontSize: 9, color: i === 11 ? '#34c759' : '#d1d1d6' }}>
                       {i === 0 ? '12w' : i === 5 ? '6w' : i === 11 ? '이번주' : ''}
                     </span>
                   ))}
@@ -444,7 +444,7 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
               </>
             ) : (
               <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 10, color: '#aeaeb2' }}>습관 데이터 없음</span>
+                <span style={{ fontSize: 12, color: '#aeaeb2' }}>습관 데이터 없음</span>
               </div>
             )}
           </StatCard>
@@ -455,7 +455,7 @@ export default function StatsPage({ timeboxBlocks, mustTodos }) {
               <VBarChart data={habitCumul} />
             ) : (
               <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 10, color: '#aeaeb2' }}>습관 데이터 없음</span>
+                <span style={{ fontSize: 12, color: '#aeaeb2' }}>습관 데이터 없음</span>
               </div>
             )}
           </StatCard>
