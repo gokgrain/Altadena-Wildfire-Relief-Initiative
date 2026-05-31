@@ -13,7 +13,7 @@ function LoginScreen() {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider())
     } catch (e) {
-      setError('로그인에 실패했습니다. 다시 시도해주세요.')
+      setError(e.code || e.message || '로그인에 실패했습니다.')
       setPending(false)
     }
   }
