@@ -3,17 +3,14 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
-// ─── 여기에 Firebase 프로젝트 설정을 입력하세요 ───────────────
-// Firebase 콘솔 → 프로젝트 설정 → 내 앱 → SDK 설정에서 복사
 const firebaseConfig = {
-  apiKey:            'YOUR_API_KEY',
-  authDomain:        'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId:         'YOUR_PROJECT_ID',
-  storageBucket:     'YOUR_PROJECT_ID.appspot.com',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId:             'YOUR_APP_ID',
+  apiKey:            'AIzaSyBOD61L827zD7uwgUnYbMCEImNCTEs1m_o',
+  authDomain:        'time-box-54cbe.firebaseapp.com',
+  projectId:         'time-box-54cbe',
+  storageBucket:     'time-box-54cbe.firebasestorage.app',
+  messagingSenderId: '677424492765',
+  appId:             '1:677424492765:web:d459f1619b4487afa26b34',
 }
-// ────────────────────────────────────────────────────────────
 
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
