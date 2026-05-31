@@ -442,43 +442,84 @@ function RichTextEditor({ value, onChange }) {
 }
 
 // ── 웹 이미지 검색 ────────────────────────────────────────
-async function fetchWikiImages(lang, query) {
-  const url = `https://${lang}.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=600&titles=${encodeURIComponent(query)}&format=json&origin=*`
-  const res = await fetch(url)
+const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5MzE5ZmQ3YjkyMTE5ZWVlMjI3ZDRkZjI2ZjNmODJhZiIsIm5iZiI6MTc4MDIzMjEyNS41LCJzdWIiOiI2YTFjMmZiZDkxMWYyZTA4ZmExZTE5ZmMiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.GaCc5dwJO3TBBhACk7qNXPlsNMSkTueZ1FlKRXP1130'
+
+function detectApiType(categoryName) {
+  const n = (categoryName || '').toLowerCase()
+  if (/영화|드라마|다큐|시리즈|영상|film|movie|drama|series/.test(n)) return 'tmdb'
+  if (/책|소설|도서|book|novel|문학/.test(n)) return 'books'
+  if (/음악|앨범|음반|가수|music|album|song/.test(n)) return 'music'
+  if (/만화|애니|애니메이션|anime|manga|웹툰/.test(n)) return 'anime'
+  return 'generic'
+}
+
+async function fetchTMDBImages(query) {
+  const res = await fetch(
+    `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&language=ko-KR&page=1`,
+    { headers: { Authorization: `Bearer ${TMDB_TOKEN}` } }
+  )
   const data = await res.json()
-  return Object.values(data.query?.pages || {}).map(p => p.thumbnail?.source).filter(Boolean)
+  return (data.results || [])
+    .filter(r => r.poster_path)
+    .map(r => `https://image.tmdb.org/t/p/w500${r.poster_path}`)
+    .slice(0, 16)
+}
+
+async function fetchGoogleBooksImages(query) {
+  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=16`)
+  const data = await res.json()
+  return (data.items || [])
+    .map(item => {
+      const links = item.volumeInfo?.imageLinks
+      const thumb = links?.extraLarge || links?.large || links?.medium || links?.thumbnail
+      return thumb?.replace('http://', 'https://')
+    })
+    .filter(Boolean)
 }
 
 async function fetchITunesImages(query) {
-  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&limit=12&media=all`
-  const res = await fetch(url)
+  const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&limit=16&media=music`)
   const data = await res.json()
   return (data.results || []).map(r => r.artworkUrl100?.replace('100x100bb', '600x600bb')).filter(Boolean)
 }
 
-async function fetchOpenLibraryImages(query) {
-  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=8`
-  const res = await fetch(url)
+async function fetchJikanImages(query) {
+  const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=16`)
   const data = await res.json()
-  return (data.docs || []).filter(d => d.cover_i).map(d => `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`)
+  return (data.data || [])
+    .map(a => a.images?.jpg?.large_image_url || a.images?.jpg?.image_url)
+    .filter(Boolean)
 }
 
-async function searchWebImages(query) {
+async function fetchGenericImages(query) {
   const results = await Promise.allSettled([
-    fetchWikiImages('ko', query),
-    fetchWikiImages('en', query),
+    fetchTMDBImages(query),
+    fetchGoogleBooksImages(query),
     fetchITunesImages(query),
-    fetchOpenLibraryImages(query),
   ])
   const all = results.flatMap(r => r.status === 'fulfilled' ? r.value : [])
   return [...new Set(all)].filter(Boolean)
 }
 
-function WebImageSearch({ query: initialQuery, onSelect }) {
+async function searchByCategory(query, categoryName) {
+  const type = detectApiType(categoryName)
+  switch (type) {
+    case 'tmdb':    return fetchTMDBImages(query)
+    case 'books':   return fetchGoogleBooksImages(query)
+    case 'music':   return fetchITunesImages(query)
+    case 'anime':   return fetchJikanImages(query)
+    default:        return fetchGenericImages(query)
+  }
+}
+
+const API_LABEL = { tmdb: 'TMDB', books: 'Google Books', music: 'iTunes', anime: 'Jikan', generic: '통합 검색' }
+
+function WebImageSearch({ query: initialQuery, categoryName, onSelect }) {
   const [query, setQuery] = useState(initialQuery || '')
   const [images, setImages] = useState([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const apiType = detectApiType(categoryName)
 
   useEffect(() => {
     if (initialQuery?.trim()) doSearch(initialQuery.trim())
@@ -489,7 +530,7 @@ function WebImageSearch({ query: initialQuery, onSelect }) {
     setLoading(true)
     setSearched(true)
     try {
-      const imgs = await searchWebImages(q.trim())
+      const imgs = await searchByCategory(q.trim(), categoryName)
       setImages(imgs)
     } catch {
       setImages([])
@@ -500,7 +541,7 @@ function WebImageSearch({ query: initialQuery, onSelect }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-      <div style={{ display: 'flex', gap: 5 }}>
+      <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
@@ -511,10 +552,14 @@ function WebImageSearch({ query: initialQuery, onSelect }) {
         <button
           onClick={() => doSearch()}
           disabled={loading}
-          style={{ padding: '6px 11px', borderRadius: 7, border: 'none', background: '#5856d6', color: '#fff', fontSize: 12, fontWeight: 600, cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.6 : 1 }}
+          style={{ padding: '6px 11px', borderRadius: 7, border: 'none', background: '#5856d6', color: '#fff', fontSize: 12, fontWeight: 600, cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.6 : 1, flexShrink: 0 }}
         >
           {loading ? '...' : '검색'}
         </button>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 10, color: '#aeaeb2', fontWeight: 600, letterSpacing: '0.05em' }}>검색 소스</span>
+        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 99, background: '#5856d618', color: '#5856d6', fontWeight: 700 }}>{API_LABEL[apiType]}</span>
       </div>
       {loading && (
         <p style={{ textAlign: 'center', padding: '12px 0', color: '#aeaeb2', fontSize: 12, margin: 0 }}>검색 중...</p>
@@ -632,6 +677,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
                   {showWebSearch && (
                     <WebImageSearch
                       query={form.title}
+                      categoryName={form.type}
                       onSelect={url => { setForm(f => ({ ...f, image: url })); setShowWebSearch(false) }}
                     />
                   )}
@@ -676,6 +722,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
                   {showWebSearch && (
                     <WebImageSearch
                       query={form.title}
+                      categoryName={form.type}
                       onSelect={url => { setForm(f => ({ ...f, image: url })); setShowWebSearch(false) }}
                     />
                   )}
