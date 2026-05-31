@@ -58,6 +58,7 @@ function IdeaDetail({ idea, categories }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           <span className="panel-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{idea.title}</span>
           <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: accent + '18', color: accent, flexShrink: 0 }}>{idea.type}</span>
+          {idea.year && <span style={{ fontSize: 11, color: '#aeaeb2', flexShrink: 0 }}>{idea.year}</span>}
         </div>
         {idea.rating > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>

@@ -453,62 +453,113 @@ function detectApiType(categoryName) {
   return 'generic'
 }
 
-async function fetchTMDBImages(query) {
+async function fetchTMDBResults(query) {
   const res = await fetch(
     `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&language=ko-KR&page=1`,
     { headers: { Authorization: `Bearer ${TMDB_TOKEN}` } }
   )
   const data = await res.json()
   return (data.results || [])
-    .filter(r => r.poster_path)
-    .map(r => `https://image.tmdb.org/t/p/w500${r.poster_path}`)
+    .filter(r => r.poster_path && (r.media_type === 'movie' || r.media_type === 'tv'))
     .slice(0, 16)
+    .map(r => ({
+      image: `https://image.tmdb.org/t/p/w500${r.poster_path}`,
+      title: r.title || r.name || '',
+      suggestedType: r.media_type === 'movie' ? '영화' : '드라마',
+      year: (r.release_date || r.first_air_date || '').slice(0, 4),
+      creators: [],
+      _source: 'tmdb',
+      _id: r.id,
+      _mediaType: r.media_type,
+    }))
 }
 
-async function fetchGoogleBooksImages(query) {
+async function fetchTMDBCredits(mediaType, id) {
+  const res = await fetch(
+    `https://api.themoviedb.org/3/${mediaType}/${id}/credits?language=ko-KR`,
+    { headers: { Authorization: `Bearer ${TMDB_TOKEN}` } }
+  )
+  const data = await res.json()
+  const directors = (data.crew || []).filter(c => c.job === 'Director').slice(0, 2)
+  const cast = (data.cast || []).slice(0, 4)
+  return [
+    ...directors.map(d => ({ name: d.name, role: '감독' })),
+    ...cast.map(c => ({ name: c.name, role: '배우' })),
+  ]
+}
+
+async function fetchGoogleBooksResults(query) {
   const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=16`)
   const data = await res.json()
-  return (data.items || [])
-    .map(item => {
-      const links = item.volumeInfo?.imageLinks
-      const thumb = links?.extraLarge || links?.large || links?.medium || links?.thumbnail
-      return thumb?.replace('http://', 'https://')
-    })
-    .filter(Boolean)
+  return (data.items || []).map(item => {
+    const info = item.volumeInfo || {}
+    const links = info.imageLinks
+    const thumb = links?.extraLarge || links?.large || links?.medium || links?.thumbnail
+    if (!thumb) return null
+    return {
+      image: thumb.replace('http://', 'https://'),
+      title: info.title || '',
+      suggestedType: '책',
+      year: (info.publishedDate || '').slice(0, 4),
+      creators: (info.authors || []).map(name => ({ name, role: '작가' })),
+      _source: 'books',
+    }
+  }).filter(Boolean)
 }
 
-async function fetchITunesImages(query) {
+async function fetchITunesResults(query) {
   const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&limit=16&media=music`)
   const data = await res.json()
-  return (data.results || []).map(r => r.artworkUrl100?.replace('100x100bb', '600x600bb')).filter(Boolean)
+  return (data.results || []).map(r => {
+    const image = r.artworkUrl100?.replace('100x100bb', '600x600bb')
+    if (!image) return null
+    return {
+      image,
+      title: r.collectionName || r.trackName || '',
+      suggestedType: '음악',
+      year: r.releaseDate ? r.releaseDate.slice(0, 4) : '',
+      creators: r.artistName ? [{ name: r.artistName, role: '가수' }] : [],
+      _source: 'itunes',
+    }
+  }).filter(Boolean)
 }
 
-async function fetchJikanImages(query) {
+async function fetchJikanResults(query) {
   const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=16`)
   const data = await res.json()
-  return (data.data || [])
-    .map(a => a.images?.jpg?.large_image_url || a.images?.jpg?.image_url)
-    .filter(Boolean)
+  return (data.data || []).map(a => {
+    const image = a.images?.jpg?.large_image_url || a.images?.jpg?.image_url
+    if (!image) return null
+    return {
+      image,
+      title: a.title_japanese || a.title || '',
+      suggestedType: '애니',
+      year: a.aired?.from ? a.aired.from.slice(0, 4) : '',
+      creators: [],
+      _source: 'jikan',
+    }
+  }).filter(Boolean)
 }
 
-async function fetchGenericImages(query) {
+async function fetchGenericResults(query) {
   const results = await Promise.allSettled([
-    fetchTMDBImages(query),
-    fetchGoogleBooksImages(query),
-    fetchITunesImages(query),
+    fetchTMDBResults(query),
+    fetchGoogleBooksResults(query),
+    fetchITunesResults(query),
   ])
   const all = results.flatMap(r => r.status === 'fulfilled' ? r.value : [])
-  return [...new Set(all)].filter(Boolean)
+  const seen = new Set()
+  return all.filter(r => { if (seen.has(r.image)) return false; seen.add(r.image); return true })
 }
 
 async function searchByCategory(query, categoryName) {
   const type = detectApiType(categoryName)
   switch (type) {
-    case 'tmdb':    return fetchTMDBImages(query)
-    case 'books':   return fetchGoogleBooksImages(query)
-    case 'music':   return fetchITunesImages(query)
-    case 'anime':   return fetchJikanImages(query)
-    default:        return fetchGenericImages(query)
+    case 'tmdb':  return fetchTMDBResults(query)
+    case 'books': return fetchGoogleBooksResults(query)
+    case 'music': return fetchITunesResults(query)
+    case 'anime': return fetchJikanResults(query)
+    default:      return fetchGenericResults(query)
   }
 }
 
@@ -516,7 +567,7 @@ const API_LABEL = { tmdb: 'TMDB', books: 'Google Books', music: 'iTunes', anime:
 
 function WebImageSearch({ query: initialQuery, categoryName, onSelect }) {
   const [query, setQuery] = useState(initialQuery || '')
-  const [images, setImages] = useState([])
+  const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const apiType = detectApiType(categoryName)
@@ -530,10 +581,10 @@ function WebImageSearch({ query: initialQuery, categoryName, onSelect }) {
     setLoading(true)
     setSearched(true)
     try {
-      const imgs = await searchByCategory(q.trim(), categoryName)
-      setImages(imgs)
+      const res = await searchByCategory(q.trim(), categoryName)
+      setResults(res)
     } catch {
-      setImages([])
+      setResults([])
     } finally {
       setLoading(false)
     }
@@ -560,26 +611,39 @@ function WebImageSearch({ query: initialQuery, categoryName, onSelect }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={{ fontSize: 10, color: '#aeaeb2', fontWeight: 600, letterSpacing: '0.05em' }}>검색 소스</span>
         <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 99, background: '#5856d618', color: '#5856d6', fontWeight: 700 }}>{API_LABEL[apiType]}</span>
+        {results.length > 0 && !loading && (
+          <span style={{ fontSize: 10, color: '#c7c7cc', marginLeft: 2 }}>클릭하면 정보 자동 입력</span>
+        )}
       </div>
       {loading && (
         <p style={{ textAlign: 'center', padding: '12px 0', color: '#aeaeb2', fontSize: 12, margin: 0 }}>검색 중...</p>
       )}
-      {!loading && searched && images.length === 0 && (
+      {!loading && searched && results.length === 0 && (
         <p style={{ textAlign: 'center', padding: '12px 0', color: '#aeaeb2', fontSize: 12, margin: 0 }}>검색 결과가 없습니다</p>
       )}
-      {!loading && images.length > 0 && (
+      {!loading && results.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, maxHeight: 200, overflowY: 'auto' }}>
-          {images.map((src, i) => (
-            <img
+          {results.map((result, i) => (
+            <div
               key={i}
-              src={src}
-              alt=""
-              style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 6, cursor: 'pointer', border: '2px solid transparent', transition: 'border-color 0.12s', display: 'block' }}
-              onClick={() => onSelect(src)}
-              onError={e => { e.currentTarget.style.display = 'none' }}
+              title={result.title ? `${result.title}${result.year ? ` (${result.year})` : ''}` : undefined}
+              style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', cursor: 'pointer', border: '2px solid transparent', transition: 'border-color 0.12s', aspectRatio: '1 / 1' }}
+              onClick={() => onSelect(result)}
               onMouseEnter={e => { e.currentTarget.style.borderColor = '#5856d6' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent' }}
-            />
+            >
+              <img
+                src={result.image}
+                alt={result.title || ''}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                onError={e => { e.currentTarget.parentElement.style.display = 'none' }}
+              />
+              {result.title && (
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 4px', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', fontSize: 9, color: '#fff', fontWeight: 600, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {result.title}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -593,6 +657,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
   const fileRef = useRef(null)
   const [showWebSearch, setShowWebSearch] = useState(false)
   const [urlInput, setUrlInput] = useState('')
+  const [autoFilling, setAutoFilling] = useState(false)
 
   const defaultType = categories.some(c => c.name === idea.type)
     ? idea.type
@@ -606,6 +671,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
     oneliner: idea.oneliner || '',
     memo:     idea.memo     || '',
     rating:   idea.rating   || 0,
+    year:     idea.year     || '',
   })
 
   async function handleImageFile(e) {
@@ -617,6 +683,40 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
     } catch {
       // 유효하지 않은 이미지 파일
     }
+  }
+
+  async function handleWebImageSelect(result) {
+    let creators = result.creators || []
+
+    // TMDB는 credits 별도 요청
+    if (result._source === 'tmdb' && result._id && result._mediaType) {
+      setAutoFilling(true)
+      try {
+        creators = await fetchTMDBCredits(result._mediaType, result._id)
+      } catch { /* 실패 시 creators 빈 배열 유지 */ }
+      setAutoFilling(false)
+    }
+
+    // 카테고리 매칭: 정확 일치 → 포함 일치 순
+    let matchedType = form.type
+    if (result.suggestedType) {
+      const exact = categories.find(c => c.name === result.suggestedType)
+      const fuzzy = !exact && categories.find(c =>
+        c.name.includes(result.suggestedType) || result.suggestedType.includes(c.name)
+      )
+      if (exact) matchedType = exact.name
+      else if (fuzzy) matchedType = fuzzy.name
+    }
+
+    setForm(f => ({
+      ...f,
+      image: result.image,
+      ...(result.title    ? { title: result.title }       : {}),
+      ...(matchedType     ? { type: matchedType }         : {}),
+      ...(creators.length ? { creators }                  : {}),
+      ...(result.year     ? { year: result.year }         : {}),
+    }))
+    setShowWebSearch(false)
   }
 
   function handleSave() {
@@ -638,7 +738,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
       onClick={onClose}
     >
       <div
-        style={{ width: 820, maxWidth: '96vw', height: 'min(88vh, 660px)', background: '#ffffff', borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.14)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        style={{ width: 820, maxWidth: '96vw', height: 'min(88vh, 660px)', background: '#ffffff', borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.14)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ padding: '15px 20px 12px', flexShrink: 0, borderBottom: '1px solid #0000000f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -650,6 +750,12 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
           </button>
         </div>
 
+        {autoFilling && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 16 }}>
+            <div style={{ width: 18, height: 18, border: '2.5px solid #5856d620', borderTop: '2.5px solid #5856d6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <span style={{ fontSize: 13, color: '#5856d6', fontWeight: 600 }}>정보 불러오는 중...</span>
+          </div>
+        )}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* 왼쪽: 이미지~별점 */}
           <div style={{ width: '52%', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', borderRight: '1px solid #0000000f' }}>
@@ -678,7 +784,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
                     <WebImageSearch
                       query={form.title}
                       categoryName={form.type}
-                      onSelect={url => { setForm(f => ({ ...f, image: url })); setShowWebSearch(false) }}
+                      onSelect={handleWebImageSelect}
                     />
                   )}
                 </div>
@@ -723,7 +829,7 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
                     <WebImageSearch
                       query={form.title}
                       categoryName={form.type}
-                      onSelect={url => { setForm(f => ({ ...f, image: url })); setShowWebSearch(false) }}
+                      onSelect={handleWebImageSelect}
                     />
                   )}
                 </div>
@@ -731,14 +837,23 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
             </Field>
 
             <Field label="제목">
-              <input
-                autoFocus
-                value={form.title}
-                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                onKeyDown={e => { if (e.key === 'Escape') onClose() }}
-                placeholder="제목을 입력하세요"
-                style={{ ...inputStyle, fontSize: 16, fontWeight: 600, background: 'transparent', border: 'none', padding: '4px 0', borderRadius: 0, borderBottom: '1px solid #0000000f' }}
-              />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <input
+                  autoFocus
+                  value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+                  placeholder="제목을 입력하세요"
+                  style={{ ...inputStyle, flex: 1, fontSize: 16, fontWeight: 600, background: 'transparent', border: 'none', padding: '4px 0', borderRadius: 0, borderBottom: '1px solid #0000000f', width: 'auto' }}
+                />
+                <input
+                  value={form.year}
+                  onChange={e => setForm(f => ({ ...f, year: e.target.value }))}
+                  placeholder="연도"
+                  maxLength={4}
+                  style={{ ...inputStyle, width: 64, fontSize: 13, textAlign: 'center', flexShrink: 0 }}
+                />
+              </div>
             </Field>
 
             <Field label="종류">
@@ -948,7 +1063,10 @@ export default function IdeaList({ ideas, setIdeas, categories, setCategories, a
                       <FileText size={11} style={{ color: '#c7c7cc', flexShrink: 0 }} />
                     )}
                     <div className="min-w-0">
-                      <span className="text-[13px] truncate block" style={{ color: '#1d1d1f' }}>{idea.title}</span>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0 }}>
+                        <span className="text-[13px] truncate" style={{ color: '#1d1d1f' }}>{idea.title}</span>
+                        {idea.year && <span style={{ fontSize: 11, color: '#aeaeb2', flexShrink: 0 }}>{idea.year}</span>}
+                      </div>
                       {creatorSummary && (
                         <span className="text-[13px] truncate block" style={{ color: '#aeaeb2' }}>{creatorSummary}</span>
                       )}
