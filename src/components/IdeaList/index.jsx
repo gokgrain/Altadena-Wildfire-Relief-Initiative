@@ -1,5 +1,5 @@
 import { useState, useRef, useId, useEffect } from 'react'
-import { Plus, X, Trash2, FileText, ImagePlus, Settings } from 'lucide-react'
+import { Plus, X, Trash2, FileText, ImagePlus, Settings, Search } from 'lucide-react'
 import { ref, uploadString, getDownloadURL } from 'firebase/storage'
 import { storage } from '../../firebase'
 import { useAuth } from '../../context/AuthContext'
@@ -441,10 +441,113 @@ function RichTextEditor({ value, onChange }) {
   )
 }
 
+// ── 웹 이미지 검색 ────────────────────────────────────────
+async function fetchWikiImages(lang, query) {
+  const url = `https://${lang}.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=600&titles=${encodeURIComponent(query)}&format=json&origin=*`
+  const res = await fetch(url)
+  const data = await res.json()
+  return Object.values(data.query?.pages || {}).map(p => p.thumbnail?.source).filter(Boolean)
+}
+
+async function fetchITunesImages(query) {
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&limit=12&media=all`
+  const res = await fetch(url)
+  const data = await res.json()
+  return (data.results || []).map(r => r.artworkUrl100?.replace('100x100bb', '600x600bb')).filter(Boolean)
+}
+
+async function fetchOpenLibraryImages(query) {
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=8`
+  const res = await fetch(url)
+  const data = await res.json()
+  return (data.docs || []).filter(d => d.cover_i).map(d => `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`)
+}
+
+async function searchWebImages(query) {
+  const results = await Promise.allSettled([
+    fetchWikiImages('ko', query),
+    fetchWikiImages('en', query),
+    fetchITunesImages(query),
+    fetchOpenLibraryImages(query),
+  ])
+  const all = results.flatMap(r => r.status === 'fulfilled' ? r.value : [])
+  return [...new Set(all)].filter(Boolean)
+}
+
+function WebImageSearch({ query: initialQuery, onSelect }) {
+  const [query, setQuery] = useState(initialQuery || '')
+  const [images, setImages] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
+
+  useEffect(() => {
+    if (initialQuery?.trim()) doSearch(initialQuery.trim())
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function doSearch(q = query) {
+    if (!q.trim()) return
+    setLoading(true)
+    setSearched(true)
+    try {
+      const imgs = await searchWebImages(q.trim())
+      setImages(imgs)
+    } catch {
+      setImages([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      <div style={{ display: 'flex', gap: 5 }}>
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') doSearch() }}
+          placeholder="검색어 입력 후 Enter"
+          style={{ flex: 1, fontSize: 12, padding: '6px 9px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit' }}
+        />
+        <button
+          onClick={() => doSearch()}
+          disabled={loading}
+          style={{ padding: '6px 11px', borderRadius: 7, border: 'none', background: '#5856d6', color: '#fff', fontSize: 12, fontWeight: 600, cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.6 : 1 }}
+        >
+          {loading ? '...' : '검색'}
+        </button>
+      </div>
+      {loading && (
+        <p style={{ textAlign: 'center', padding: '12px 0', color: '#aeaeb2', fontSize: 12, margin: 0 }}>검색 중...</p>
+      )}
+      {!loading && searched && images.length === 0 && (
+        <p style={{ textAlign: 'center', padding: '12px 0', color: '#aeaeb2', fontSize: 12, margin: 0 }}>검색 결과가 없습니다</p>
+      )}
+      {!loading && images.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, maxHeight: 200, overflowY: 'auto' }}>
+          {images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt=""
+              style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 6, cursor: 'pointer', border: '2px solid transparent', transition: 'border-color 0.12s', display: 'block' }}
+              onClick={() => onSelect(src)}
+              onError={e => { e.currentTarget.style.display = 'none' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#5856d6' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent' }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── 아이디어 추가/편집 팝업 ───────────────────────────────
 function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
   const isNew = !idea.id
   const fileRef = useRef(null)
+  const [showWebSearch, setShowWebSearch] = useState(false)
+  const [urlInput, setUrlInput] = useState('')
 
   const defaultType = categories.some(c => c.name === idea.type)
     ? idea.type
@@ -509,25 +612,74 @@ function IdeaModal({ idea, categories, onSave, onDelete, onClose }) {
             <Field label="이미지">
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageFile} />
               {form.image ? (
-                <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
-                  <img src={form.image} alt="cover" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
-                  <button onClick={() => setForm(f => ({ ...f, image: null }))} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <X size={12} />
-                  </button>
-                  <button onClick={() => fileRef.current?.click()} style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }}>
-                    교체
-                  </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
+                    <img src={form.image} alt="cover" style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
+                    <button onClick={() => { setForm(f => ({ ...f, image: null })); setShowWebSearch(false) }} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <X size={12} />
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <button onClick={() => fileRef.current?.click()}
+                      style={{ flex: 1, padding: '5px 0', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', fontSize: 12, color: '#86868b', cursor: 'pointer', fontWeight: 500 }}>
+                      파일 교체
+                    </button>
+                    <button onClick={() => setShowWebSearch(v => !v)}
+                      style={{ flex: 1, padding: '5px 0', borderRadius: 7, border: `1px solid ${showWebSearch ? '#5856d640' : '#0000000f'}`, background: showWebSearch ? '#5856d610' : '#f5f5f7', fontSize: 12, color: showWebSearch ? '#5856d6' : '#86868b', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                      <Search size={11} /> 웹 검색
+                    </button>
+                  </div>
+                  {showWebSearch && (
+                    <WebImageSearch
+                      query={form.title}
+                      onSelect={url => { setForm(f => ({ ...f, image: url })); setShowWebSearch(false) }}
+                    />
+                  )}
                 </div>
               ) : (
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  style={{ height: 72, width: '100%', borderRadius: 10, border: '1.5px dashed #c7c7cc', background: '#f5f5f7', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#aeaeb2', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#5856d6'; e.currentTarget.style.color = '#5856d6' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#c7c7cc'; e.currentTarget.style.color = '#aeaeb2' }}
-                >
-                  <ImagePlus size={18} />
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>이미지 첨부</span>
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      style={{ flex: 1, height: 64, borderRadius: 10, border: '1.5px dashed #c7c7cc', background: '#f5f5f7', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: '#aeaeb2', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#5856d6'; e.currentTarget.style.color = '#5856d6' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#c7c7cc'; e.currentTarget.style.color = '#aeaeb2' }}
+                    >
+                      <ImagePlus size={16} />
+                      <span style={{ fontSize: 12, fontWeight: 500 }}>파일 선택</span>
+                    </button>
+                    <button
+                      onClick={() => setShowWebSearch(v => !v)}
+                      style={{ flex: 1, height: 64, borderRadius: 10, border: `1.5px dashed ${showWebSearch ? '#5856d6' : '#c7c7cc'}`, background: showWebSearch ? '#5856d608' : '#f5f5f7', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: showWebSearch ? '#5856d6' : '#aeaeb2', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { if (!showWebSearch) { e.currentTarget.style.borderColor = '#5856d6'; e.currentTarget.style.color = '#5856d6' } }}
+                      onMouseLeave={e => { if (!showWebSearch) { e.currentTarget.style.borderColor = '#c7c7cc'; e.currentTarget.style.color = '#aeaeb2' } }}
+                    >
+                      <Search size={16} />
+                      <span style={{ fontSize: 12, fontWeight: 500 }}>웹 검색</span>
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <input
+                      value={urlInput}
+                      onChange={e => setUrlInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && urlInput.trim()) { setForm(f => ({ ...f, image: urlInput.trim() })); setUrlInput('') } }}
+                      placeholder="또는 이미지 URL 붙여넣기..."
+                      style={{ flex: 1, fontSize: 12, padding: '6px 9px', borderRadius: 7, border: '1px solid #0000000f', background: '#f5f5f7', outline: 'none', fontFamily: 'inherit', color: '#1d1d1f' }}
+                    />
+                    <button
+                      onClick={() => { if (urlInput.trim()) { setForm(f => ({ ...f, image: urlInput.trim() })); setUrlInput('') } }}
+                      style={{ padding: '6px 11px', borderRadius: 7, border: 'none', background: urlInput.trim() ? '#5856d6' : '#f5f5f7', color: urlInput.trim() ? '#fff' : '#aeaeb2', fontSize: 12, fontWeight: 600, cursor: urlInput.trim() ? 'pointer' : 'default', transition: 'all 0.12s' }}
+                    >
+                      적용
+                    </button>
+                  </div>
+                  {showWebSearch && (
+                    <WebImageSearch
+                      query={form.title}
+                      onSelect={url => { setForm(f => ({ ...f, image: url })); setShowWebSearch(false) }}
+                    />
+                  )}
+                </div>
               )}
             </Field>
 
